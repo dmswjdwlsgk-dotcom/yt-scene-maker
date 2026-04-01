@@ -154,6 +154,8 @@ export default function App() {
       const opts = getImageOptions();
       const CONCURRENCY = 5;
       const queue = [...baseScenes];
+      let completed = 0;
+      setGenerationProgress({ current: 0, total: baseScenes.length });
       const worker = async () => {
         while (queue.length > 0) {
           const scene = queue.shift();
@@ -164,9 +166,12 @@ export default function App() {
           } catch (e) {
             console.warn(`씬 ${scene.sceneNumber} 프롬프트 생성 실패:`, e.message);
           }
+          completed++;
+          setGenerationProgress({ current: completed, total: baseScenes.length });
         }
       };
       await Promise.all(Array(Math.min(CONCURRENCY, baseScenes.length)).fill(null).map(() => worker()));
+      setGenerationProgress({ current: 0, total: 0 });
     } catch (err) {
       setSplitError(err.message);
       setIsSplitting(false);
@@ -406,7 +411,7 @@ export default function App() {
   }
 
   const doneCount = scenes.filter((s) => s.status === "done").length;
-  const estimatedScenes = script.length > 0 ? Math.max(1, Math.ceil(script.length / (settings.sceneDuration * 8))) : 0;
+  const estimatedScenes = script.length > 0 ? splitScriptIntoScenes(script, settings.sceneDuration).length : 0;
   const isWorking = isSplitting || isGeneratingAll;
 
   return (
