@@ -546,29 +546,25 @@ const STYLE_TEMPLATES = {
 [은유]: 추상적 개념을 물리적 도구(거대한 가격표, 화살표, 돈주머니 등)로 형상화.
 [텍스트]: 핵심 키워드 1개만 사용. 자막 스타일 연출 절대 금지. 텍스트/기호($, %, 화살표)는 화이트보드, 신문, 가격표 등 사물 표면에 자연스럽게 배치. 굵은 마카펜 손글씨 느낌.
 [톤]: 교육적이고 명확하며 따뜻한 분위기. 핵심에 집중하는 미니멀리즘.`,
-  "cinematic_anime": `시네마틱 플랫 일러스트 스타일 (역사원정대 채널 스타일).
+  "cinematic_anime": `Clean vector flat illustration style. Professional motion graphics quality. Adobe Illustrator / After Effects motion graphic aesthetic.
 
-[화풍 핵심]: 포토리얼 금지. 그라디언트 없는 100% 플랫 컬러 일러스트. 검은 외곽선, 씬당 5~7색 제한 팔레트. 영화적 구도의 모션그래픽 일러스트.
+[화풍]: 100% flat color, zero gradients, zero textures, zero photorealism. Crisp clean vector edges. Bold solid-color fills with precise black outlines. Like a high-quality animated history documentary (Kurzgesagt meets cinematic Korean YouTube).
 
-[인물 디테일 규칙 — 거리에 따라 자동 선택]:
-- 원거리/군중/액션: 단색 실루엣 또는 최소한의 색면 처리. 디테일 없음.
-- 중거리(상반신): 단순화된 얼굴(눈·코·입 기본 표현), 의상 색상 구분.
-- 클로즈업(감정씬): 표정 디테일 살림(눈물, 주름, 눈빛). 단, 여전히 플랫 컬러 유지.
+[인물]:
+- 원거리/군중: clean solid-color silhouettes, sharp edges, no face detail
+- 중거리: simplified but well-proportioned figures, basic facial features, clear clothing colors
+- 클로즈업: expressive face with flat color — defined eyes, eyebrows, wrinkles rendered as flat shapes
 
-[배경 연출]:
-배경은 단색 면(面)을 레이어드로 쌓아 원근감 표현. 산→능선→하늘을 각각 다른 단색으로 분리. 건물·도시도 면 분할로 표현. 디테일한 텍스처나 사진 합성 금지.
+[배경]: Geometric layered flat planes. Mountains = stacked color bands. Buildings = clean rectangular blocks in 2-3 tones. Sky = single flat color. No blur, no fog, no texture.
 
-[씬별 색상 팔레트 가이드]:
-- 전쟁/충돌: 황토 오렌지 + 짙은 갈색 + 연기 회색
-- 자연/평화: 연두 + 초록 + 하늘색 + 아이보리
-- 겨울/슬픔: 차가운 파랑 + 흰색 + 회청색
-- 정치/외교: 중간 톤 베이지 + 딥 블루 + 포인트 레드
+[색상]: 씬 분위기에 맞는 제한 팔레트 (5색 이내):
+- 전쟁/충돌: warm amber + dark brown + slate gray
+- 자연: sage green + sky blue + ivory
+- 겨울/슬픔: steel blue + white + dark navy
+- 정치/외교: beige + deep blue + red accent
+- 도시/군중: golden amber + burnt orange + dark brown
 
-[구도]:
-영화적 와이드샷 또는 감정 클로즈업. 지도·손가락 포인팅 등 정보 전달 연출 적극 활용. 군중씬은 원경 와이드로 밀도감 표현.
-
-절대 금지: 포토리얼, 그라디언트, 화면 분할, 이미지 내 텍스트/자막, 3D 렌더링.
-대본 상황에 맞는 하나의 시네마틱 장면으로 연출.`,
+절대 금지: gradients, textures, photorealism, 3D rendering, split screen, image text.`,
   "economy_caricature": `일본 스타일 귀여운 SD/치비 캐리커처 정치/경제 풍자 애니메이션, 사실적인 배경과 영화적 조명.
 캐릭터: 2~3등신 SD(Super Deformed) 비율의 귀여운 치비 캐리커처. 머리가 몸보다 크고 둥글며, 큰 눈과 단순화된 이목구비, 통통한 볼을 가진 카와이(Kawaii) 스타일. 기괴한 풍자가 아닌 귀엽고 유쾌한 캐리커처이되, 인물의 외형적 특징(헤어스타일, 의상, 체형)은 한눈에 알아볼 수 있도록 정확히 표현.
 인물 표현 규칙: 실명 금지. 국가/직책 + 외형 묘사로 대체. "미국 대통령, 금발 올백 헤어에 붉은 넥타이의 건장한 치비 남성", "일본 총리, 단정한 단발의 여성 치비 정치인", "한국 대통령, 안경 쓴 치비 남성" 처럼 국가+외형으로 서술.
@@ -2664,48 +2660,45 @@ History Matters 스타일: 그림자나 그라데이션이 전혀 없는 완전�
       `:s==="cinematic_anime"?N=`
   ${S}
   [역할]
-  당신은 **'역사원정대' 채널 스타일의 시네마틱 플랫 일러스트 감독**입니다.
-  포토리얼이나 3D 렌더링이 아닌, **100% 플랫 컬러 일러스트** 스타일로 대본의 핵심 장면을 연출해야 합니다.
+  당신은 **역사 다큐멘터리 유튜브 채널 전용 고퀄리티 벡터 플랫 일러스트 감독**입니다.
+  목표: Adobe Illustrator로 제작한 듯한 **깔끔하고 정교한 벡터 플랫 일러스트** 프롬프트 작성.
+  절대 포토리얼, 3D 렌더링, 수채화, 스케치 느낌이 나면 안 됩니다.
 
   [전체 영상 주제] "${r}"
   [스타일 가이드] ${n}
 
-  [핵심 연출 규칙 - 절대 준수]
-  1. **[화풍: 플랫 일러스트]:**
-      - 그라디언트, 텍스처, 포토리얼 요소 절대 금지. **순수 플랫 컬러(Flat Color)** 만 사용.
-      - 검은 외곽선. 씬당 5~7색 제한 팔레트.
+  ⭐ [핵심 화풍 키워드 — 반드시 프롬프트에 포함]
+  "flat vector illustration, clean geometric shapes, solid color fills, bold outlines, motion graphics style, professional animated documentary, no gradients, no textures, limited color palette"
 
-  2. **[인물 디테일 - 거리 기반 자동 판단]:**
-      - **원거리/군중/액션 씬** → 인물은 단색 실루엣 또는 색면(面) 처리. 얼굴 디테일 없음.
-      - **중거리(상반신 이상)** → 단순화된 얼굴(눈·코·입 기본 표현), 의상 색 구분.
-      - **클로즈업(감정 강조 씬)** → 표정 디테일(눈물, 주름, 눈빛) 살리되 플랫 컬러 유지.
+  [장면 분석 → 연출 방식 선택]
+  대본을 읽고 아래 중 하나를 선택하여 연출하십시오:
 
-  3. **[배경: 레이어드 면 분할]:**
-      - 배경은 단색 면(面)을 레이어드로 쌓아 원근감 표현.
-      - 산·능선·하늘은 각각 다른 단색으로 분리. 건물·도시도 면 분할.
-      - 지도·손 포인팅 등 정보 전달 연출 적극 활용.
+  **[A. 군중/전쟁/행진 씬]** → 와이드샷. 인물들은 깔끔한 단색 실루엣(solid silhouette). 배경은 레이어드 평면(하늘/지평선/땅을 각각 단색으로 분리).
 
-  4. **[씬별 색상 팔레트 판단]:**
-      - 전쟁/충돌 → 황토 오렌지 + 짙은 갈색 + 회색
-      - 자연/평화 → 연두 + 초록 + 하늘색 + 아이보리
-      - 겨울/슬픔 → 차가운 파랑 + 흰색 + 회청색
-      - 정치/외교 → 베이지 + 딥 블루 + 포인트 레드
-      - 도시/군중 → 따뜻한 노란색 + 붉은색 + 짙은 베이지
+  **[B. 자연/장소 묘사 씬]** → 풍경 와이드샷. 산·언덕·들판을 단색 면(面) 레이어로 겹쳐 원근감 표현. 인물 없거나 소형 실루엣.
 
-  5. **[구도 판단]:**
-      - 전쟁·군중·규모감 → 영화적 와이드샷, 실루엣 행렬
-      - 인물 감정 → 클로즈업 또는 미디엄샷
-      - 정보·지도 → 지도/손/인포그래픽 중심 구도
+  **[C. 인물 중심/감정 씬]** → 미디엄샷 또는 클로즈업. 인물 얼굴에 표정 디테일(눈·눈썹·입을 플랫 셰이프로). 배경은 단순 면 처리.
 
-  6. **텍스트:** 이미지 내 텍스트/자막 절대 금지. ${m}
+  **[D. 정보/지도 씬]** → 지도 또는 손 포인팅 중심. 실루엣 손이 지도를 가리키는 구도. 깔끔한 그래픽 스타일.
+
+  **[E. 도시/건물 씬]** → 건물을 기하학적 직사각형 블록으로. 2~3톤의 단색으로 면 분할. 원근감 있는 거리 구도.
+
+  [색상 팔레트 — 씬 분위기에 맞게 5색 이내 선택]
+  - 전쟁/충돌: warm amber(#D4820A) + dark brown(#3D2B1A) + slate gray(#6B7B8D)
+  - 자연/평화: sage green(#7BAE7F) + sky blue(#A8D8EA) + ivory(#F5F0DC)
+  - 겨울/슬픔: steel blue(#4A6FA5) + white(#F0F4F8) + dark navy(#1C2B4A)
+  - 정치/외교: warm beige(#D4B896) + deep blue(#2C4A7C) + red(#C0392B)
+  - 도시/군중: golden amber(#E8A020) + burnt orange(#C65D00) + dark brown(#2D1F0E)
+
+  [텍스트] 이미지 내 모든 텍스트/글자 절대 금지. ${m}
 
   [임무]
-  대본을 분석하여 위 규칙에 맞는 **플랫 일러스트 이미지 프롬프트** 하나를 작성하십시오.
+  대본을 분석하여 A~E 중 하나를 선택하고, **벡터 플랫 일러스트 이미지 프롬프트** 하나를 작성하십시오.
 
   [작성 요구사항]
-  - **분량:** 최소 6문장 이상.
-  - 구도(와이드/클로즈업), 인물 처리 방식(실루엣/단순화/디테일), 색상 팔레트, 배경 면 구성을 구체적으로 명시.
-  - 옵션/선택지 제시 금지. **하나의 확정된 프롬프트만** 출력.
+  - 반드시 "flat vector illustration", "solid color fills", "no gradients" 등 핵심 스타일 키워드 포함.
+  - 선택한 연출 방식(A~E), 구체적 색상 팔레트, 배경 면 구성, 인물 처리 방식을 명시.
+  - 최소 6문장. 옵션 제시 금지. **하나의 확정된 프롬프트만** 출력.
 
   [출력 형식]
   - **무조건 한국어(한글)**로만 작성하십시오.
