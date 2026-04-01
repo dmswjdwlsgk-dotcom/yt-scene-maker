@@ -1,26 +1,27 @@
 import { STYLES } from "../lib/styles.js";
 
 // Actual preview images (from original app)
+const BASE = import.meta.env.BASE_URL;
 const STYLE_IMAGES = {
-  info:               "/styles/info.png",
-  issue_youtube:      "/styles/issue_youtube.png",
-  realistic_stickman: "/styles/realistic.png",
-  history:            "/styles/history.png",
-  history_toon:       "/styles/3d_docu.png",
-  scifi:              "/styles/scifi.png",
-  paint_explainer:    "/styles/paint_explainer.png",
-  paint_story:        "/styles/paint_story.png",
-  comic_realism:      "/styles/comic_realism.png",
-  senior_real:        "/styles/senior_real.png",
-  pink_skull:         "/styles/pink_skull.png",
-  animal_skull:       "/styles/animal_skull.png",
-  countryball:        "/styles/countryball.png",
-  real_countryball:   "/styles/real_countryball.png",
-  manga:              "/styles/manga.png",
-  game_unreal:        "/styles/game_unreal.png",
-  photo_docu:         "/styles/photo_docu.png",
-  webtoon:            "/styles/webtoon.png",
-  custom:             "/styles/custom.png",
+  info:               `${BASE}styles/info.png`,
+  issue_youtube:      `${BASE}styles/issue_youtube.png`,
+  realistic_stickman: `${BASE}styles/realistic.png`,
+  history:            `${BASE}styles/history.png`,
+  history_toon:       `${BASE}styles/3d_docu.png`,
+  scifi:              `${BASE}styles/scifi.png`,
+  paint_explainer:    `${BASE}styles/paint_explainer.png`,
+  paint_story:        `${BASE}styles/paint_story.png`,
+  comic_realism:      `${BASE}styles/comic_realism.png`,
+  senior_real:        `${BASE}styles/senior_real.png`,
+  pink_skull:         `${BASE}styles/pink_skull.png`,
+  animal_skull:       `${BASE}styles/animal_skull.png`,
+  countryball:        `${BASE}styles/countryball.png`,
+  real_countryball:   `${BASE}styles/real_countryball.png`,
+  manga:              `${BASE}styles/manga.png`,
+  game_unreal:        `${BASE}styles/game_unreal.png`,
+  photo_docu:         `${BASE}styles/photo_docu.png`,
+  webtoon:            `${BASE}styles/webtoon.png`,
+  custom:             `${BASE}styles/custom.png`,
 };
 
 // Style-specific preview colors and backgrounds (fallback)
