@@ -334,20 +334,7 @@ Error generating stack: `+e.message+`
 [연출]: 한 장면에 하나의 개념만 담백하게 연출. 분할 화면/복잡한 합성 절대 금지.
 [은유]: 추상적 개념을 물리적 도구(거대한 가격표, 화살표, 돈주머니 등)로 형상화.
 [텍스트]: 핵심 키워드 1개만 사용. 자막 스타일 연출 절대 금지. 텍스트/기호($, %, 화살표)는 화이트보드, 신문, 가격표 등 사물 표면에 자연스럽게 배치. 굵은 마카펜 손글씨 느낌.
-[톤]: 교육적이고 명확하며 따뜻한 분위기. 핵심에 집중하는 미니멀리즘.`,cinematic_anime:`Clean vector flat illustration style. Professional motion graphics quality. Adobe Illustrator / After Effects motion graphic aesthetic.
-
-[화풍]: 100% flat color, zero gradients, zero textures, zero photorealism. Crisp clean vector edges. Bold solid-color fills with precise black outlines. Like a high-quality animated history documentary (Kurzgesagt meets cinematic Korean YouTube).
-
-[인물]:
-- 원거리/군중: clean solid-color silhouettes, sharp edges, no face detail
-- 중거리: simplified but well-proportioned figures, basic facial features, clear clothing colors
-- 클로즈업: expressive face with flat color — defined eyes, eyebrows, wrinkles rendered as flat shapes
-
-[배경]: Geometric layered flat planes. Mountains = stacked color bands. Buildings = clean rectangular blocks in 2-3 tones. Sky = single flat color. No blur, no fog, no texture.
-
-[색상]: 대본의 시간대·장소·분위기를 먼저 파악하고, 그 장면에 가장 어울리는 색상 팔레트를 자유롭게 선택. 단, 한 씬에 5색 이내로 제한.
-
-절대 금지: gradients, textures, photorealism, 3D rendering, split screen, image text.`,economy_caricature:`일본 스타일 귀여운 SD/치비 캐리커처 정치/경제 풍자 애니메이션, 사실적인 배경과 영화적 조명.
+[톤]: 교육적이고 명확하며 따뜻한 분위기. 핵심에 집중하는 미니멀리즘.`,cinematic_anime:`Flat vector editorial illustration. TWO RENDERING MODES — choose per scene: MODE A (emotion/close-up scenes): detailed facial features with expressive eyes, visible tears/wrinkles/stubble, character fills 50%+ of frame, warm skin tones with sharp geometric shadow blocks. MODE B (context/wide scenes): characters rendered as pure BLACK SILHOUETTES against vivid environmental backgrounds, wide cinematic compositions, figures occupy less than 30% of frame. BOTH MODES share: no outlines, bold flat color blocks, sharp-edged shadows (never soft gradients), muted palette chosen to match scene mood, geometric simplification of architecture and objects, editorial magazine aesthetic. 8k, full bleed, no text.`,economy_caricature:`일본 스타일 귀여운 SD/치비 캐리커처 정치/경제 풍자 애니메이션, 사실적인 배경과 영화적 조명.
 캐릭터: 2~3등신 SD(Super Deformed) 비율의 귀여운 치비 캐리커처. 머리가 몸보다 크고 둥글며, 큰 눈과 단순화된 이목구비, 통통한 볼을 가진 카와이(Kawaii) 스타일. 기괴한 풍자가 아닌 귀엽고 유쾌한 캐리커처이되, 인물의 외형적 특징(헤어스타일, 의상, 체형)은 한눈에 알아볼 수 있도록 정확히 표현.
 인물 표현 규칙: 실명 금지. 국가/직책 + 외형 묘사로 대체. "미국 대통령, 금발 올백 헤어에 붉은 넥타이의 건장한 치비 남성", "일본 총리, 단정한 단발의 여성 치비 정치인", "한국 대통령, 안경 쓴 치비 남성" 처럼 국가+외형으로 서술.
 배경: 단순한 단색 배경 금지. 대본의 장소(정상회담장, 국회, 월스트리트, 사무실 등)를 디테일하고 입체적인 2D로 묘사.
@@ -2412,36 +2399,35 @@ History Matters 스타일: 그림자나 그라데이션이 전혀 없는 완전�
   [전체 영상 주제] "${r}"
   [스타일 가이드] ${d}
 
-  ⭐ [핵심 화풍 키워드 — 반드시 프롬프트에 포함]
-  "flat vector illustration, clean geometric shapes, solid color fills, bold outlines, motion graphics style, professional animated documentary, no gradients, no textures, limited color palette"
+  ⭐ [작성할 프롬프트의 필수 구조]
+  아래 형식을 반드시 따르십시오. 이 구조 자체가 이미지 품질을 결정합니다.
 
-  [장면 분석 → 연출 방식 선택]
-  대본을 읽고 아래 중 하나를 선택하여 연출하십시오:
+  **[STEP 1: 렌더링 모드 선택]**
+  대본을 읽고 둘 중 하나를 선택:
+  - **MODE A (감정/인물 씬)**: 인물이 프레임의 50% 이상 차지. 얼굴 디테일(눈·눈물·주름·수염) 표현. 따뜻한 피부톤 + 날카로운 기하학적 그림자 블록.
+  - **MODE B (상황/맥락 씬)**: 인물은 순수 검은 실루엣. 와이드 시네마틱 구도. 인물이 프레임의 30% 이하. 선명한 환경 배경이 주인공.
 
-  **[A. 군중/전쟁/행진 씬]** → 와이드샷. 인물들은 깔끔한 단색 실루엣(solid silhouette). 배경은 레이어드 평면(하늘/지평선/땅을 각각 단색으로 분리).
+  **[STEP 2: 프롬프트 작성 — 반드시 영어로, 아래 키워드 포함]**
+  - 공통 필수: "Flat vector editorial illustration", "bold flat color blocks", "sharp-edged shadows (never soft gradients)", "geometric simplification", "editorial magazine aesthetic", "no outlines", "8k, full bleed, no text"
+  - MODE A 추가: "detailed facial features", "expressive eyes", "warm skin tones", "sharp geometric shadow blocks"
+  - MODE B 추가: "pure BLACK SILHOUETTES", "vivid environmental background", "cinematic wide shot"
+  - 색상: 대본 분위기에 맞는 "muted [색상] palette" 명시 (예: blue-gray-orange-teal, navy-teal-crimson 등)
 
-  **[B. 자연/장소 묘사 씬]** → 풍경 와이드샷. 산·언덕·들판을 단색 면(面) 레이어로 겹쳐 원근감 표현. 인물 없거나 소형 실루엣.
-
-  **[C. 인물 중심/감정 씬]** → 미디엄샷 또는 클로즈업. 인물 얼굴에 표정 디테일(눈·눈썹·입을 플랫 셰이프로). 배경은 단순 면 처리.
-
-  **[D. 정보/지도 씬]** → 지도 또는 손 포인팅 중심. 실루엣 손이 지도를 가리키는 구도. 깔끔한 그래픽 스타일.
-
-  **[E. 도시/건물 씬]** → 건물을 기하학적 직사각형 블록으로. 2~3톤의 단색으로 면 분할. 원근감 있는 거리 구도.
-
-  [색상 팔레트] 대본의 시간대·장소·분위기를 먼저 파악하고 그 장면에 가장 어울리는 색상을 자유롭게 선택. 단, 한 씬에 5색 이내로 제한하여 통일감 유지.
+  **[STEP 3: 장면 묘사]**
+  대본의 구체적 상황(인물 행동, 장소, 사물, 분위기)을 영어로 명확하게 묘사.
 
   [텍스트] 이미지 내 모든 텍스트/글자 절대 금지. ${f}
 
   [임무]
-  대본을 분석하여 A~E 중 하나를 선택하고, **벡터 플랫 일러스트 이미지 프롬프트** 하나를 작성하십시오.
+  대본을 분석하여 MODE A/B를 선택하고, **위 구조에 맞는 영어 이미지 프롬프트**를 작성하십시오.
 
   [작성 요구사항]
-  - 반드시 "flat vector illustration", "solid color fills", "no gradients" 등 핵심 스타일 키워드 포함.
-  - 선택한 연출 방식(A~E), 구체적 색상 팔레트, 배경 면 구성, 인물 처리 방식을 명시.
-  - 최소 6문장. 옵션 제시 금지. **하나의 확정된 프롬프트만** 출력.
+  - **반드시 영어로** 작성. (이미지 모델이 영어 프롬프트에 훨씬 잘 반응함)
+  - 옵션/선택지 제시 금지. **하나의 확정된 프롬프트만** 출력.
+  - 분량: 3~5문장의 밀도 높은 영어 프롬프트.
 
   [출력 형식]
-  - **무조건 한국어(한글)**로만 작성하십시오.
+  - **영어로만** 작성하십시오.
   - 부가 설명 없이 **오직 프롬프트 텍스트만** 출력하십시오.
 
   [대본 내용]
