@@ -345,16 +345,7 @@ Error generating stack: `+e.message+`
 
 [배경]: Geometric layered flat planes. Mountains = stacked color bands. Buildings = clean rectangular blocks in 2-3 tones. Sky = single flat color. No blur, no fog, no texture.
 
-[색상]: 대본의 시간대·장소·분위기를 먼저 파악하고 아래에서 맞는 팔레트 선택 (5색 이내):
-- 밤/실내 작전/긴장: deep navy + teal blue + dark charcoal + white accent (달빛, 창문 빛)
-- 새벽/일출/희망: soft peach + muted gold + pale blue
-- 전쟁/사막 낮: warm amber + dark brown + dusty gray
-- 자연/평화/마을: sage green + sky blue + ivory + earth brown
-- 겨울/눈/슬픔: steel blue + white + dark navy + gray
-- 정치/회의실/외교: muted beige + deep blue + red accent
-- 축제/환호/혁명: deep navy sky + warm yellow + red + ivory (불꽃, 군중)
-- 사막/중동/역사: sandy beige + terracotta + deep brown + sky blue
-- 음모/비밀/위기: dark charcoal + teal + single warm light source
+[색상]: 대본의 시간대·장소·분위기를 먼저 파악하고, 그 장면에 가장 어울리는 색상 팔레트를 자유롭게 선택. 단, 한 씬에 5색 이내로 제한.
 
 절대 금지: gradients, textures, photorealism, 3D rendering, split screen, image text.`,economy_caricature:`일본 스타일 귀여운 SD/치비 캐리커처 정치/경제 풍자 애니메이션, 사실적인 배경과 영화적 조명.
 캐릭터: 2~3등신 SD(Super Deformed) 비율의 귀여운 치비 캐리커처. 머리가 몸보다 크고 둥글며, 큰 눈과 단순화된 이목구비, 통통한 볼을 가진 카와이(Kawaii) 스타일. 기괴한 풍자가 아닌 귀엽고 유쾌한 캐리커처이되, 인물의 외형적 특징(헤어스타일, 의상, 체형)은 한눈에 알아볼 수 있도록 정확히 표현.
@@ -2437,16 +2428,7 @@ History Matters 스타일: 그림자나 그라데이션이 전혀 없는 완전�
 
   **[E. 도시/건물 씬]** → 건물을 기하학적 직사각형 블록으로. 2~3톤의 단색으로 면 분할. 원근감 있는 거리 구도.
 
-  [색상 팔레트 — 대본의 시간대·장소·분위기 먼저 파악 후 선택 (5색 이내)]
-  - 밤/실내/작전/긴장: deep navy(#1A2744) + teal(#2E6B7A) + dark charcoal(#1C1C2E) + white accent
-  - 새벽/일출/희망: soft peach(#F2C49B) + muted gold(#D4A843) + pale blue(#A8C5D8)
-  - 전쟁/사막 낮: warm amber(#D4820A) + dark brown(#3D2B1A) + dusty gray(#8B7B6B)
-  - 자연/평화/마을: sage green(#7BAE7F) + sky blue(#A8D8EA) + ivory(#F5F0DC)
-  - 겨울/눈/슬픔: steel blue(#4A6FA5) + white(#F0F4F8) + dark navy(#1C2B4A)
-  - 정치/회의/외교: muted beige(#D4B896) + deep blue(#2C4A7C) + red(#C0392B)
-  - 축제/혁명/군중: deep navy sky(#0D1B3E) + warm yellow(#F5C518) + red(#C0392B) + ivory
-  - 사막/중동/역사: sandy beige(#E8D5A3) + terracotta(#C1440E) + deep brown(#3D1F0A)
-  - 음모/비밀/위기: dark charcoal(#1C1C2E) + teal(#2E6B7A) + single warm light
+  [색상 팔레트] 대본의 시간대·장소·분위기를 먼저 파악하고 그 장면에 가장 어울리는 색상을 자유롭게 선택. 단, 한 씬에 5색 이내로 제한하여 통일감 유지.
 
   [텍스트] 이미지 내 모든 텍스트/글자 절대 금지. ${f}
 
