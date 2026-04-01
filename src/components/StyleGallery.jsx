@@ -30,6 +30,7 @@ const STYLE_PREVIEWS = {
   info:               { bg: "linear-gradient(135deg, #fff9c4 0%, #fff176 50%, #ffee58 100%)", accent: "#f57f17" },
   issue_youtube:      { bg: "linear-gradient(135deg, #0d1b2a 0%, #1b2838 50%, #2d3a4a 100%)", accent: "#4fc3f7" },
   realistic_stickman: { bg: "linear-gradient(135deg, #1a0a00 0%, #2d1700 50%, #3d2200 100%)", accent: "#ff7043" },
+  documentary:        { bg: "linear-gradient(135deg, #0d0d0d 0%, #1a1510 50%, #2a1f14 100%)", accent: "#d4a053" },
   history:            { bg: "linear-gradient(135deg, #0a0a1a 0%, #1a1230 50%, #2d1f4a 100%)", accent: "#9575cd" },
   history_toon:       { bg: "linear-gradient(135deg, #1a1500 0%, #2d2600 50%, #3d3200 100%)", accent: "#ffd54f" },
   scifi:              { bg: "linear-gradient(135deg, #001a1a 0%, #002d2d 50%, #003d3d 100%)", accent: "#00e5ff" },
@@ -51,7 +52,6 @@ const STYLE_PREVIEWS = {
   photo_docu:         { bg: "linear-gradient(135deg, #1a1400 0%, #2d2400 50%, #3d3200 100%)", accent: "#ffd740" },
   clay:               { bg: "linear-gradient(135deg, #f5e6d3 0%, #ead5bb 50%, #dfc5a3 100%)", accent: "#795548" },
   economy_caricature: { bg: "linear-gradient(135deg, #0d1b4a 0%, #1a2d6e 50%, #2d4a9e 100%)", accent: "#ffeb3b" },
-  cinematic_anime:    { bg: "linear-gradient(135deg, #1a0a00 0%, #3d1f00 50%, #7a3d00 100%)", accent: "#ff8c42" },
   custom:             { bg: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #3d3d3d 100%)", accent: "#bdbdbd" },
 };
 
@@ -61,6 +61,7 @@ const STYLE_VISUALS = {
   info:               "💡🌟",
   issue_youtube:      "📊📈",
   realistic_stickman: "🎬🎭",
+  documentary:        "🎞️🎭",
   history:            "🏛️⚔️",
   history_toon:       "📰✏️",
   scifi:              "⚙️🔬",
@@ -82,7 +83,6 @@ const STYLE_VISUALS = {
   photo_docu:         "📷🎥",
   clay:               "🏺🧸",
   economy_caricature: "🎭😄",
-  cinematic_anime:    "🎥🌅",
   custom:             "✏️⚡",
 };
 

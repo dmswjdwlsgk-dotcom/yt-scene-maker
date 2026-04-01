@@ -37,6 +37,13 @@ export const STYLES = [
     category: "2d",
   },
   {
+    id: "documentary",
+    label: "다큐 모션그래픽",
+    description: "2D 플랫 벡터 다큐 스타일. 주연은 표정 살리고 조연은 실루엣 처리",
+    emoji: "🎞️",
+    category: "2d",
+  },
+  {
     id: "history_toon",
     label: "역사/지식 툰",
     description: "가독성과 정보 전달에 집중한 인포그래픽 스타일",
@@ -177,13 +184,6 @@ export const STYLES = [
     category: "2d",
   },
   {
-    id: "cinematic_anime",
-    label: "시네마틱 플랫 애니",
-    description: "역사왕 스타일. 플랫 컬러 + 시네마틱 조명의 반실사 애니메이션",
-    emoji: "🎥",
-    category: "2d",
-  },
-  {
     id: "custom",
     label: "직접 입력",
     description: "사용자 정의 프롬프트",
@@ -228,6 +228,9 @@ const STYLE_TEMPLATES = {
 연출: 스틱맨 여러 캐릭터들이 대본 속 행동을 리얼하게 연기(Acting). 감정 표현은 표정보다는 역동적인 몸짓(Body Language)으로 극대화.
 절대 금지: 화면 분할(Split Screen), 텍스트 나열, 단순 인포그래픽 스타일.
 대본의 상황을 잘 나타내게 분활화면으로 말고 하나의 장면으로 연출.`,
+  "documentary": `대본의 무게감과 진지함에 어울리는 '2D 플랫 벡터(Flat Vector)' 기반의 다큐멘터리 모션그래픽 컷씬 느낌으로 그려줘. 복잡한 명암이나 3D 입체감은 완벽히 배제하고, 깔끔한 선과 단색(Flat color), 단순한 셀 셰이딩(Cell Shading)으로만 정보와 감정을 명확하게 전달한다.
+[핵심 인물 연출] 핵심 주연(1~2명)만 단순화된 얼굴 이목구비를 그리고, 나머지 조연 및 군중은 얼굴(피부)을 완벽한 검은색 그림자(Blacked-out face)로 덮어 익명 처리하되, 입고 있는 옷(정장, 군복 등)의 색상과 형태는 명확하게 살려두어 소속을 알 수 있게 연출한다.
+상황을 직관적으로 보여주기 위해 분할 화면 없이 꽉 찬 단일 장면으로 연출하고, 화면이 지저분해지지 않게 불필요한 텍스트나 자막 스타일 연출은 절대 하지 않는다. (16:9 비율). 무조건 3D나 실사가 아닌 2D 스토리보드 일러스트 스타일 유지.`,
   "history": `역사적 사실을 기반으로 한 '2D 시네마틱 얼굴이 둥근 하얀색 스틱맨 애니메이션' 스타일.
 깊이 있는 색감(Dark & Rich Tone)과 극적인 조명 사용.
 캐릭터는 2D 실루엣이나 스틱맨이지만 시대에 맞는 의상과 헤어스타일을 착용.
@@ -546,7 +549,6 @@ const STYLE_TEMPLATES = {
 [은유]: 추상적 개념을 물리적 도구(거대한 가격표, 화살표, 돈주머니 등)로 형상화.
 [텍스트]: 핵심 키워드 1개만 사용. 자막 스타일 연출 절대 금지. 텍스트/기호($, %, 화살표)는 화이트보드, 신문, 가격표 등 사물 표면에 자연스럽게 배치. 굵은 마카펜 손글씨 느낌.
 [톤]: 교육적이고 명확하며 따뜻한 분위기. 핵심에 집중하는 미니멀리즘.`,
-  "cinematic_anime": `Flat vector editorial illustration. TWO RENDERING MODES — choose per scene: MODE A (emotion/close-up scenes): detailed facial features with expressive eyes, visible tears/wrinkles/stubble, character fills 50%+ of frame, warm skin tones with sharp geometric shadow blocks. MODE B (context/wide scenes): characters rendered as pure BLACK SILHOUETTES against vivid environmental backgrounds, wide cinematic compositions, figures occupy less than 30% of frame. BOTH MODES share: no outlines, bold flat color blocks, sharp-edged shadows (never soft gradients), muted palette chosen to match scene mood, geometric simplification of architecture and objects, editorial magazine aesthetic. 8k, full bleed, no text.`,
   "economy_caricature": `일본 스타일 귀여운 SD/치비 캐리커처 정치/경제 풍자 애니메이션, 사실적인 배경과 영화적 조명.
 캐릭터: 2~3등신 SD(Super Deformed) 비율의 귀여운 치비 캐리커처. 머리가 몸보다 크고 둥글며, 큰 눈과 단순화된 이목구비, 통통한 볼을 가진 카와이(Kawaii) 스타일. 기괴한 풍자가 아닌 귀엽고 유쾌한 캐리커처이되, 인물의 외형적 특징(헤어스타일, 의상, 체형)은 한눈에 알아볼 수 있도록 정확히 표현.
 인물 표현 규칙: 실명 금지. 국가/직책 + 외형 묘사로 대체. "미국 대통령, 금발 올백 헤어에 붉은 넥타이의 건장한 치비 남성", "일본 총리, 단정한 단발의 여성 치비 정치인", "한국 대통령, 안경 쓴 치비 남성" 처럼 국가+외형으로 서술.
@@ -858,6 +860,40 @@ export function getStylePrompt(styleId, options = {}) {
   - **분량:** 최소 7문장 이상으로 상세하게 묘사.
   - **무조건 한국어(한글)**로만 작성하십시오.
   - 부가 설명 없이 **오직 프롬프트 텍스트만** 출력하십시오.
+      `;else if(s==="documentary")N=`
+  ${S}
+  [역할]
+  당신은 복잡한 역사적, 정치적 상황을 상징적이고 무게감 있는 단 한 장의 그림으로 요약하는 '다큐멘터리 모션그래픽 아트 디렉터' / '2D 스토리보드 아티스트'입니다.
+
+  [전체 영상 주제] "${r}"
+  [스타일 가이드] ${n}
+
+  [필수 연출 지침]
+  1. **화풍:** 무조건 2D 플랫 벡터(Flat Vector) 일러스트. (3D 그래픽, 수채화, 극사실주의, 복잡한 그라데이션, 지저분한 스케치 라인 절대 금지)
+  2. **인물 표현 (부분 실루엣):** 주인공(1~2명) 외의 주변 인물들(참모, 병사, 군중 등)은 '얼굴(피부)만 완벽한 검은색 그림자(faces entirely blacked out in shadow)로 덮고, 입고 있는 옷(정장, 군복 등)의 색상과 디테일은 선명하게 보이게' 묘사.
+  3. **조명:** 극적이고 영화적인 조명(Cinematic Lighting). 노을, 화염, 역광 등을 활용해 시각적 대비를 강하게.
+  4. **색감:** 차분하고 무게감 있는 뮤트톤(Muted palette)을 베이스로 하되, 강조할 곳(불, 피, 상징물)에만 강렬한 포인트 컬러 블로킹 사용.
+  5. **분위기:** 진지함, 비극성, 결의, 긴장감 등 역사 다큐멘터리의 무거운 톤 유지. (유치하거나 너무 밝은 만화적 연출 금지)
+  6. **화면 구성:** 분할 화면 절대 금지. 한 화면에 하나의 상징적 상황만 집중 배치.
+  7. **텍스트 정책:** 허공에 떠 있는 글자 금지. 꼭 필요한 기호나 글자는 사물(지도, 문서, 깃발, 모니터)의 일부로만 묘사. ${m}
+  8. **배경:** 디테일하지만 질감을 단순화시킨 2D 배경. (예: 폭격 맞은 도시, 광활한 산맥, 회의실 내부, 작전 통제실 등)
+
+  [★ 대본 분석 및 샷 판별]
+  대본의 핵심 주체에 따라 카메라 앵글을 결정:
+  - **특정 개인의 감정/행동이 주체:** 미디엄 샷 또는 클로즈업. 인물의 표정(오열, 분노, 결연함)을 선명하게 묘사.
+  - **다수의 군중/군대가 주체:** 와이드 샷. 군복이나 평상복의 색감은 보여주되 얼굴은 완벽히 검게 처리된(Faceless) 인물들을 넓게 배치.
+  - **국경/조약/영토 분쟁이 주체:** 테이블 위에 펼쳐진 거대한 지도, 모니터를 바라보는 군 지휘관들 뒷모습, 서류에 서명하는 손 클로즈업 등 '사물/인포그래픽' 뷰로 묘사.
+
+  [임무]
+  제공된 대본 조각을 분석하여, 위 지침에 맞는 구체적인 이미지 프롬프트를 작성하십시오.
+
+  [출력 형식]
+  - **무조건 한국어(한글)**로만 작성하십시오. (스타일 키워드는 영어 병기 가능)
+  - 분량: 최소 7문장 이상으로 상세하게.
+  - 부가 설명 없이 **오직 프롬프트 텍스트만** 출력하십시오.
+
+  [대본 내용]
+  "${e}"
       `;else if(s==="history")N=`
   ${S}
   [역할]
@@ -2639,49 +2675,6 @@ History Matters 스타일: 그림자나 그라데이션이 전혀 없는 완전�
   [출력 형식]
   - **무조건 한국어(한글)**로만 작성하십시오.
   - 부가적인 설명 없이 **오직 프롬프트 텍스트만** 출력하십시오.
-      `:s==="cinematic_anime"?N=`
-  ${S}
-  [역할]
-  당신은 **역사 다큐멘터리 유튜브 채널 전용 고퀄리티 벡터 플랫 일러스트 감독**입니다.
-  목표: Adobe Illustrator로 제작한 듯한 **깔끔하고 정교한 벡터 플랫 일러스트** 프롬프트 작성.
-  절대 포토리얼, 3D 렌더링, 수채화, 스케치 느낌이 나면 안 됩니다.
-
-  [전체 영상 주제] "${r}"
-  [스타일 가이드] ${n}
-
-  ⭐ [작성할 프롬프트의 필수 구조]
-  아래 형식을 반드시 따르십시오. 이 구조 자체가 이미지 품질을 결정합니다.
-
-  **[STEP 1: 렌더링 모드 선택]**
-  대본을 읽고 둘 중 하나를 선택:
-  - **MODE A (감정/인물 씬)**: 인물이 프레임의 50% 이상 차지. 얼굴 디테일(눈·눈물·주름·수염) 표현. 따뜻한 피부톤 + 날카로운 기하학적 그림자 블록.
-  - **MODE B (상황/맥락 씬)**: 인물은 순수 검은 실루엣. 와이드 시네마틱 구도. 인물이 프레임의 30% 이하. 선명한 환경 배경이 주인공.
-
-  **[STEP 2: 프롬프트 작성 — 반드시 영어로, 아래 키워드 포함]**
-  - 공통 필수: "Flat vector editorial illustration", "bold flat color blocks", "sharp-edged shadows (never soft gradients)", "geometric simplification", "editorial magazine aesthetic", "no outlines", "8k, full bleed, no text"
-  - MODE A 추가: "detailed facial features", "expressive eyes", "warm skin tones", "sharp geometric shadow blocks"
-  - MODE B 추가: "pure BLACK SILHOUETTES", "vivid environmental background", "cinematic wide shot"
-  - 색상: 대본 분위기에 맞는 "muted [색상] palette" 명시 (예: blue-gray-orange-teal, navy-teal-crimson 등)
-
-  **[STEP 3: 장면 묘사]**
-  대본의 구체적 상황(인물 행동, 장소, 사물, 분위기)을 영어로 명확하게 묘사.
-
-  [텍스트] 이미지 내 모든 텍스트/글자 절대 금지. ${m}
-
-  [임무]
-  대본을 분석하여 MODE A/B를 선택하고, **위 구조에 맞는 영어 이미지 프롬프트**를 작성하십시오.
-
-  [작성 요구사항]
-  - **반드시 영어로** 작성. (이미지 모델이 영어 프롬프트에 훨씬 잘 반응함)
-  - 옵션/선택지 제시 금지. **하나의 확정된 프롬프트만** 출력.
-  - 분량: 3~5문장의 밀도 높은 영어 프롬프트.
-
-  [출력 형식]
-  - **영어로만** 작성하십시오.
-  - 부가 설명 없이 **오직 프롬프트 텍스트만** 출력하십시오.
-
-  [대본 내용]
-  "${e}"
       `:s==="economy_caricature"?N=`
   ${S}
   [역할]
