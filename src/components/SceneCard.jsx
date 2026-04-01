@@ -9,12 +9,14 @@ export default function SceneCard({
   scene, onRegenerate, onDelete, onScriptChange, aspectRatio,
   pexelsKey, pixabayKey, onImageSelected,
   sceneMotionSettings, onSceneMotionSave,
+  onTTSGenerate,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedScript, setEditedScript] = useState(scene.script);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showMotionModal, setShowMotionModal] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
 
   const ratioMap = { "16:9": "16/9", "9:16": "9/16", "1:1": "1/1" };
   const ar = ratioMap[aspectRatio] || "16/9";
@@ -109,8 +111,14 @@ export default function SceneCard({
 
         {/* TTS audio player */}
         {scene.ttsAudio && (
-          <div style={{ marginTop: 10 }}>
-            <audio controls src={scene.ttsAudio} style={{ width: "100%", height: 32, accentColor: "#F97316" }} />
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+            <audio controls src={scene.ttsAudio} style={{ flex: 1, height: 32, accentColor: "#F97316" }} />
+            <button
+              onClick={() => onTTSGenerate && onTTSGenerate(scene.sceneNumber)}
+              disabled={ttsLoading}
+              style={{ background: "none", border: "none", color: "#6B7280", fontSize: 14, cursor: "pointer", padding: 2 }}
+              title="재생성"
+            >🔄</button>
           </div>
         )}
 
@@ -162,6 +170,31 @@ export default function SceneCard({
             🗑
           </button>
         </div>
+
+        {/* TTS 생성 버튼 */}
+        {!scene.ttsAudio && (
+          <button
+            onClick={async () => {
+              if (!onTTSGenerate) return;
+              setTtsLoading(true);
+              await onTTSGenerate(scene.sceneNumber);
+              setTtsLoading(false);
+            }}
+            disabled={ttsLoading || !scene.script}
+            style={{
+              width: "100%", marginTop: 6,
+              background: "#0E1117", border: "1px solid #2D3748",
+              borderRadius: 8, color: ttsLoading ? "#FBBF24" : "#9CA3AF",
+              fontSize: 12, padding: "7px 0", cursor: ttsLoading || !scene.script ? "not-allowed" : "pointer",
+              fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              opacity: !scene.script ? 0.5 : 1,
+            }}
+          >
+            {ttsLoading
+              ? <><span style={{ width: 12, height: 12, border: "2px solid #FBBF24", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} /> TTS 생성 중...</>
+              : "🔊 TTS 음성 생성"}
+          </button>
+        )}
 
         {/* Keyword motion button */}
         <button

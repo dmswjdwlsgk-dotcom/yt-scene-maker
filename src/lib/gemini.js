@@ -37,37 +37,39 @@ export function getCurrentMode() {
 }
 
 // Scene splitting
-export async function splitScriptIntoScenes(script, sceneDuration = 20) {
-  const ai = getAi();
-  const charsPerScene = Math.round(sceneDuration * 7);
+// 원본 열정PD 방식: AI 없이 코드로 정확히 분할 (초당 8자 기준)
+function programmaticSplitScript(script, charsPerScene = 160) {
+  const numberedRe = /^(첫\s*번째|두\s*번째|세\s*번째|네\s*번째|다섯\s*번째|여섯\s*번째|일곱\s*번째|여덟\s*번째|아홉\s*번째|열\s*번째|열한\s*번째|열두\s*번째|\d+\s*번째|제?\s*\d+\s*[편장화위번]|first|second|third|fourth|fifth|number\s*\d+)/i;
+  const sentences = script
+    .replace(/\./g, ".|").replace(/\?/g, "?|").replace(/!/g, "!|")
+    .replace(/。/g, "。|").replace(/？/g, "？|").replace(/！/g, "！|")
+    .replace(/\n/g, "\n|")
+    .split("|");
 
-  const prompt = `당신은 유튜브 영상 대본을 씬(장면)으로 분할하는 전문가입니다.
+  const chunks = [];
+  let current = "";
+  for (let seg of sentences) {
+    seg = seg.trim();
+    if (!seg) continue;
+    if (numberedRe.test(seg) && current.trim()) {
+      chunks.push(current.trim());
+      current = seg;
+    } else if (current.length + seg.length < charsPerScene) {
+      const isCJK = /[\u3000-\u9FFF\uF900-\uFAFF]/.test(seg);
+      current = current ? current + (isCJK ? "" : " ") + seg : seg;
+    } else {
+      if (current.trim()) chunks.push(current.trim());
+      current = seg;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
 
-[대본]
-${script}
-
-[규칙]
-- 한 씬당 약 ${charsPerScene}자 기준으로 분할 (대략 ${sceneDuration}초 분량)
-- 자연스러운 문장 경계에서 분할 (문장 중간에서 자르지 않기)
-- 각 씬은 완결된 내용 단위로 구성
-- 최소 1씬, 최대 200씬
-
-[출력 형식] JSON 배열로만 응답. 다른 텍스트 없이 JSON만.
-[
-  { "sceneNumber": 1, "script": "씬 내용..." },
-  { "sceneNumber": 2, "script": "씬 내용..." }
-]`;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    config: { temperature: 0.3 },
-  });
-
-  const text = response.text.trim();
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error("씬 분할 응답 파싱 실패");
-  return JSON.parse(jsonMatch[0]);
+export function splitScriptIntoScenes(script, sceneDuration = 20) {
+  const charsPerScene = Math.round(sceneDuration * 8);
+  const chunks = programmaticSplitScript(script, charsPerScene);
+  return chunks.map((text, i) => ({ sceneNumber: i + 1, script: text }));
 }
 
 // Title suggestion
@@ -126,7 +128,7 @@ export async function generateImagePrompt(scene, options) {
 }
 
 // Generate image from prompt
-export async function generateImage(imagePrompt, aspectRatio = "16:9", imageModel = "Fast (Gemini-2.5-pro)") {
+export async function generateImage(imagePrompt, aspectRatio = "16:9", imageModel = "Fast (Gemini-2.5-pro)", referenceImage = null) {
   const ai = getAi();
 
   const ratioMap = {
@@ -141,6 +143,8 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
     ? "imagen-4.0-ultra-generate-001"
     : imageModel.includes("Gemini 3 Pro")
     ? "gemini-3-pro-image-preview"
+    : imageModel.includes("Nano1")
+    ? "gemini-2.5-flash-image"         // 나노바나나1
     : "gemini-3.1-flash-image-preview"; // 나노바나나2 (Fast, 기본값)
 
   // Imagen 4 Ultra: generateImages API 사용
@@ -192,11 +196,41 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
   const config = isVertex ? vertexConfig : aiStudioConfig;
   const startTime = Date.now();
 
+  // 원본 앱과 동일: 참조 이미지가 있으면 프롬프트 강화 + inlineData 추가
+  let finalPrompt = imagePrompt;
+  const parts = [];
+
+  if (referenceImage) {
+    finalPrompt = imagePrompt + `
+
+[🛑 CRITICAL INSTRUCTION: CHARACTER REFERENCE 🛑]
+The user has provided an image to define the **Main Character's Appearance**.
+You MUST generate the new scene using **THIS EXACT CHARACTER DESIGN**.
+
+**MANDATORY CONSISTENCY CHECK:**
+1. **Face/Hair:** Keep the same hair color, hair style, and facial features.
+2. **Outfit:** Keep the same clothes (color, type, accessories).
+3. **Style Adaptation:**
+   - If the target style is 2D/Stickman, convert this character into that style but **KEEP** their signature features (e.g., Red Scarf, Blue Hat, Long Blonde Hair).
+   - If the target style is Realistic, look exactly like the reference person.
+
+**DO NOT** generate a random person.
+**DO NOT** change the outfit colors.
+**USE THE REFERENCE IMAGE AS THE GROUND TRUTH.**`;
+
+    const mimeType = referenceImage.match(/^data:(image\/\w+);base64,/)?.[1] || "image/png";
+    const data = referenceImage.includes("base64,") ? referenceImage.split("base64,")[1] : referenceImage;
+    parts.push({ text: finalPrompt });
+    parts.push({ inlineData: { mimeType, data } });
+  } else {
+    parts.push({ text: finalPrompt });
+  }
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: modelId,
-        contents: [{ role: "user", parts: [{ text: imagePrompt }] }],
+        contents: [{ role: "user", parts }],
         config,
       });
       const part = response.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
@@ -232,10 +266,60 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
   }
 }
 
+// PCM → WAV 변환 (Gemini TTS는 raw PCM 반환)
+function pcmToWav(pcmBase64, sampleRate = 24000, channels = 1, bitDepth = 16) {
+  const pcmBytes = Uint8Array.from(atob(pcmBase64), c => c.charCodeAt(0));
+  const byteRate = sampleRate * channels * (bitDepth / 8);
+  const blockAlign = channels * (bitDepth / 8);
+  const dataSize = pcmBytes.length;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+  const writeStr = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+  new Uint8Array(buffer, 44).set(pcmBytes);
+  const wavBytes = new Uint8Array(buffer);
+  let b64 = "";
+  const chunk = 8192;
+  for (let i = 0; i < wavBytes.length; i += chunk) {
+    b64 += String.fromCharCode(...wavBytes.subarray(i, i + chunk));
+  }
+  return `data:audio/wav;base64,${btoa(b64)}`;
+}
+
+// TTS 음성 생성 (Gemini TTS)
+export async function generateTTS(text, voiceName = "Kore") {
+  const ai = getAi();
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-preview-tts",
+    contents: [{ role: "user", parts: [{ text }] }],
+    config: {
+      responseModalities: ["AUDIO"],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+      },
+    },
+  });
+  const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+  if (!part?.inlineData?.data) throw new Error("TTS 응답에 오디오 데이터 없음");
+  return pcmToWav(part.inlineData.data, 24000, 1, 16);
+}
+
 // Generate prompt + image
 export async function generateSceneImage(scene, options) {
   const imagePrompt = await generateImagePrompt(scene, options);
-  const imageBase64 = await generateImage(imagePrompt, options.aspectRatio, options.imageModel);
+  const imageBase64 = await generateImage(imagePrompt, options.aspectRatio, options.imageModel, options.referenceImage || null);
   return { imagePrompt, imageBase64 };
 }
 

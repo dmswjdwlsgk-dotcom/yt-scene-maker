@@ -22,6 +22,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const IMAGE_MODELS = [
+  { id: "Nano1 (gemini-2.5-flash-image)", name: "나노바나나1", desc: "가장 빠르고 저렴", emoji: "🍌" },
   { id: "Fast (Gemini-2.5-pro)", name: "나노바나나2", desc: "빠르고 안정적 (추천)", emoji: "🍌", badge: "추천" },
   { id: "Premium (Gemini 3 Pro)", name: "나노바나나 프로", desc: "고화질 (시간 소요)", emoji: "🍌" },
   { id: "Ultra (Imagen 4 Ultra)", name: "Imagen 4 Ultra", desc: "최고 화질 (텍스트 전용)", emoji: "💎" },
@@ -46,7 +47,8 @@ export default function Sidebar({
   tts, onTtsChange,
   keyword, onKeywordChange,
   bgmFile, onBgmFileChange,
-  scenes, supertoneKey, onTtsGenerated,
+  scenes, onTtsGenerated,
+  referenceImage, onReferenceImageChange,
 }) {
   const [showGallery, setShowGallery] = useState(false);
   const [activeTab, setActiveTab] = useState("settings");
@@ -202,7 +204,7 @@ export default function Sidebar({
                     style={{ width: "100%", accentColor: "#F97316" }}
                   />
                   <p style={{ fontSize: 10, color: "#FBBF24", marginTop: 6 }}>
-                    💡 {settings.sceneDuration}초 = 약 {Math.round(settings.sceneDuration * 7)}자 단위
+                    💡 {settings.sceneDuration}초 = 약 {Math.round(settings.sceneDuration * 8)}자 단위
                   </p>
                 </div>
               </section>
@@ -238,6 +240,64 @@ export default function Sidebar({
                     value={settings.customPrompt || ""}
                     onChange={(e) => onChange({ customPrompt: e.target.value })}
                   />
+                )}
+              </section>
+
+              {/* Reference image */}
+              <section>
+                <div style={{ ...sectionLabelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+                  🖼️ 참조 이미지 (선택)
+                  <span style={{ fontSize: 9, background: "#F97316", color: "#fff", borderRadius: 4, padding: "1px 5px", fontWeight: 700, letterSpacing: 0 }}>NEW</span>
+                </div>
+                <div style={{ fontSize: 10, color: "#6B7280", marginBottom: 8, lineHeight: 1.5 }}>
+                  캐릭터/배경 일관성 유지용. 업로드 시 모든 씬에 동일한 인물·스타일이 반영됩니다.
+                </div>
+                {referenceImage ? (
+                  <div style={{ position: "relative" }}>
+                    <img
+                      src={referenceImage}
+                      alt="참조 이미지"
+                      style={{ width: "100%", borderRadius: 10, display: "block", maxHeight: 160, objectFit: "cover", border: "2px solid #F97316" }}
+                    />
+                    <button
+                      onClick={() => onReferenceImageChange(null)}
+                      style={{
+                        position: "absolute", top: 6, right: 6,
+                        width: 24, height: 24, borderRadius: "50%",
+                        background: "rgba(0,0,0,0.7)", border: "none",
+                        color: "#fff", fontSize: 14, cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >×</button>
+                    <div style={{ fontSize: 10, color: "#34D399", marginTop: 6, textAlign: "center" }}>✅ 참조 이미지 설정됨 — 모든 씬에 적용</div>
+                  </div>
+                ) : (
+                  <label style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    gap: 8, padding: "20px 0", cursor: "pointer",
+                    border: "2px dashed #2D3748", borderRadius: 10,
+                    background: "#0E1117", transition: "border-color 0.2s",
+                  }}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = "#F97316"}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = "#2D3748"}
+                  >
+                    <span style={{ fontSize: 28, opacity: 0.4 }}>🖼</span>
+                    <span style={{ fontSize: 11, color: "#6B7280" }}>클릭하여 이미지 로드</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith("image/")) { alert("이미지 파일만 업로드할 수 있습니다."); return; }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => onReferenceImageChange(ev.target.result);
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
                 )}
               </section>
 
@@ -287,11 +347,8 @@ export default function Sidebar({
           {activeTab === "tts" && (
             <div style={{ padding: "12px" }}>
               <TtsPanel
-                settings={tts}
-                onSettingsChange={onTtsChange}
-                scenes={scenes}
-                supertoneKey={supertoneKey}
-                onTtsGenerated={onTtsGenerated}
+                tts={tts}
+                onChange={onTtsChange}
               />
             </div>
           )}

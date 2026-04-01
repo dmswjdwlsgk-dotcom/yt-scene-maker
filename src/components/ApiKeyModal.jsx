@@ -5,7 +5,6 @@ import {
   saveVertexKey, loadVertexKey,
   savePexelsKey, loadPexelsKey,
   savePixabayKey, loadPixabayKey,
-  saveSupertoneKey, loadSupertoneKey,
 } from "../lib/storage.js";
 import { initGemini, initVertex } from "../lib/gemini.js";
 
@@ -18,7 +17,6 @@ export default function ApiKeyModal({ onClose }) {
   const [vertexKey, setVertexKey] = useState(loadVertexKey());
   const [pexelsKey, setPexelsKey] = useState(loadPexelsKey());
   const [pixabayKey, setPixabayKey] = useState(loadPixabayKey());
-  const [supertoneKey, setSupertoneKey] = useState(loadSupertoneKey());
   const [gcsearchKey, setGcsearchKey] = useState(loadGcsearchKey());
 
   const [saveGemini, setSaveGemini] = useState(!!loadApiKey());
@@ -30,7 +28,6 @@ export default function ApiKeyModal({ onClose }) {
     (vertexKey.trim() ? 1 : 0) +
     (pexelsKey.trim() ? 1 : 0) +
     (pixabayKey.trim() ? 1 : 0) +
-    (supertoneKey.trim() ? 1 : 0) +
     (gcsearchKey.trim() ? 1 : 0);
 
   function handleSave() {
@@ -50,7 +47,6 @@ export default function ApiKeyModal({ onClose }) {
 
     savePexelsKey(pexelsKey.trim());
     savePixabayKey(pixabayKey.trim());
-    saveSupertoneKey(supertoneKey.trim());
     saveGcsearchKey(gcsearchKey.trim());
 
     initGemini(geminiKey.trim());
@@ -241,32 +237,6 @@ export default function ApiKeyModal({ onClose }) {
             <p style={{ fontSize: 11, color: "#6B7280", marginTop: 8 }}>
               <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener noreferrer" style={{ color: "#34D399" }}>
                 pixabay.com/api/docs 에서 무료 발급 →
-              </a>
-            </p>
-          </div>
-
-          {/* TTS / Audio section */}
-          {dividerLabel("T T S / 음 성")}
-
-          {/* Supertone Key */}
-          <div style={sectionStyle}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#FB923C" }}>🎙️ Supertone API Key</h3>
-                <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>AI 음성 합성(TTS)에 사용됩니다.</p>
-              </div>
-              <span style={{ fontSize: 11, background: "#374151", color: "#9CA3AF", padding: "3px 10px", borderRadius: 20, fontWeight: 700 }}>선택</span>
-            </div>
-            <input
-              type="password"
-              style={{ ...inputStyle, border: supertoneKey ? "1px solid #FB923C" : "1px solid #2D3748" }}
-              placeholder="Supertone API Key"
-              value={supertoneKey}
-              onChange={(e) => setSupertoneKey(e.target.value)}
-            />
-            <p style={{ fontSize: 11, color: "#6B7280", marginTop: 8 }}>
-              <a href="https://supertoneapi.com" target="_blank" rel="noopener noreferrer" style={{ color: "#FB923C" }}>
-                supertoneapi.com 에서 발급 →
               </a>
             </p>
           </div>

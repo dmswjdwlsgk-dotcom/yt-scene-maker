@@ -5,11 +5,9 @@ import ApiKeyModal from "./components/ApiKeyModal.jsx";
 import ProjectManager from "./components/ProjectManager.jsx";
 import ScriptGenerator from "./components/ScriptGenerator.jsx";
 import ExportModal from "./components/ExportModal.jsx";
-import YoutubeAnalyzer from "./components/YoutubeAnalyzer.jsx";
 import {
   loadApiKey,
   loadVertexKey,
-  loadSupertoneKey,
   loadPexelsKey,
   loadPixabayKey,
   saveSettings,
@@ -40,9 +38,10 @@ import {
   splitScriptIntoScenes,
   suggestTitles,
   generateSceneImage,
+  generateImagePrompt,
   generateGrokPrompts,
+  generateTTS,
 } from "./lib/gemini.js";
-import { generateTtsForScene } from "./lib/tts.js";
 
 const DEFAULT_SETTINGS = {
   styleId: "auto",
@@ -56,7 +55,6 @@ const DEFAULT_SETTINGS = {
 export default function App() {
   const [settings, setSettings] = useState(() => loadSettings() || DEFAULT_SETTINGS);
   const [apiKey, setApiKey] = useState(() => loadApiKey());
-  const [supertoneKey, setSupertoneKey] = useState(() => loadSupertoneKey());
   const [pexelsKey, setPexelsKey] = useState(() => loadPexelsKey());
   const [pixabayKey, setPixabayKey] = useState(() => loadPixabayKey());
   const [showApiModal, setShowApiModal] = useState(false);
@@ -73,6 +71,7 @@ export default function App() {
   const [bgmFile, setBgmFile] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [sceneMotionSettings, setSceneMotionSettings] = useState({});
+  const [referenceImage, setReferenceImage] = useState(null);
 
   const [projectId] = useState(() => generateId());
   const [title, setTitle] = useState("");
@@ -126,7 +125,6 @@ export default function App() {
 
   function handleApiKeySet(key) {
     setApiKey(key);
-    setSupertoneKey(loadSupertoneKey());
     setPexelsKey(loadPexelsKey());
     setPixabayKey(loadPixabayKey());
     setShowApiModal(false);
@@ -140,25 +138,44 @@ export default function App() {
     if (project.country) setCountry(project.country);
   }
 
-  // 프롬프트만: 씬 분할만 (이미지 생성 없음)
+  // 프롬프트만: 씬 분할 + 이미지 프롬프트 생성 (이미지 생성 없음)
   async function handlePromptsOnly() {
     if (!script.trim()) return;
     if (!apiKey) { setShowApiModal(true); return; }
     setIsSplitting(true);
     setSplitError("");
     try {
-      const rawScenes = await splitScriptIntoScenes(script, settings.sceneDuration);
-      setScenes(rawScenes.map((s) => ({ ...s, id: generateId(), status: "pending", imageBase64: null, imagePrompt: null, error: null })));
+      const rawScenes = splitScriptIntoScenes(script, settings.sceneDuration);
+      const baseScenes = rawScenes.map((s) => ({ ...s, id: generateId(), status: "pending", imageBase64: null, imagePrompt: null, error: null }));
+      setScenes(baseScenes);
+      setIsSplitting(false);
+
+      // 이미지 프롬프트 병렬 생성
+      const opts = getImageOptions();
+      const CONCURRENCY = 5;
+      const queue = [...baseScenes];
+      const worker = async () => {
+        while (queue.length > 0) {
+          const scene = queue.shift();
+          if (!scene) break;
+          try {
+            const imagePrompt = await generateImagePrompt(scene, opts);
+            setScenes((prev) => prev.map((s) => s.sceneNumber === scene.sceneNumber ? { ...s, imagePrompt } : s));
+          } catch (e) {
+            console.warn(`씬 ${scene.sceneNumber} 프롬프트 생성 실패:`, e.message);
+          }
+        }
+      };
+      await Promise.all(Array(Math.min(CONCURRENCY, baseScenes.length)).fill(null).map(() => worker()));
     } catch (err) {
       setSplitError(err.message);
-    } finally {
       setIsSplitting(false);
     }
   }
 
   // 이미지 생성 옵션 (공통)
   function getImageOptions() {
-    return { topic: title, styleId: settings.styleId, aspectRatio: settings.aspectRatio, language: settings.language, country, customPrompt: settings.customPrompt, imageModel: settings.imageModel };
+    return { topic: title, styleId: settings.styleId, aspectRatio: settings.aspectRatio, language: settings.language, country, customPrompt: settings.customPrompt, imageModel: settings.imageModel, referenceImage: referenceImage || null };
   }
 
   // SCENE 생성: 씬 분할 + 이미지 병렬 자동 생성 (3개 동시)
@@ -169,7 +186,7 @@ export default function App() {
     setSplitError("");
     let newScenes;
     try {
-      const rawScenes = await splitScriptIntoScenes(script, settings.sceneDuration);
+      const rawScenes = splitScriptIntoScenes(script, settings.sceneDuration);
       newScenes = rawScenes.map((s) => ({ ...s, id: generateId(), status: "pending", imageBase64: null, imagePrompt: null, error: null }));
       setScenes(newScenes);
     } catch (err) {
@@ -183,7 +200,7 @@ export default function App() {
     setIsGeneratingAll(true);
     setGenerationProgress({ current: 0, total: newScenes.length });
 
-    const CONCURRENCY = 3;
+    const CONCURRENCY = 5;
     const queue = [...newScenes];
     let completed = 0;
     const opts = getImageOptions();
@@ -217,11 +234,24 @@ export default function App() {
       const { imagePrompt, imageBase64 } = await generateSceneImage(scene, {
         topic: title, styleId: settings.styleId, aspectRatio: settings.aspectRatio,
         language: settings.language, country, customPrompt: settings.customPrompt,
-        imageModel: settings.imageModel,
+        imageModel: settings.imageModel, referenceImage: referenceImage || null,
       });
       setScenes((prev) => prev.map((s) => s.sceneNumber === sceneNumber ? { ...s, status: "done", imageBase64, imagePrompt, error: null } : s));
     } catch (err) {
       setScenes((prev) => prev.map((s) => s.sceneNumber === sceneNumber ? { ...s, status: "error", error: err.message } : s));
+    }
+  }
+
+  async function handleGenerateTTS(sceneNumber) {
+    if (!apiKey) { setShowApiModal(true); return; }
+    const scene = scenesRef.current.find(s => s.sceneNumber === sceneNumber);
+    if (!scene?.script) return;
+    try {
+      const voiceName = tts?.voiceName || "Kore";
+      const ttsAudio = await generateTTS(scene.script, voiceName);
+      setScenes(prev => prev.map(s => s.sceneNumber === sceneNumber ? { ...s, ttsAudio } : s));
+    } catch (err) {
+      alert("TTS 생성 실패: " + err.message);
     }
   }
 
@@ -300,21 +330,15 @@ export default function App() {
   }
 
   async function handleTtsAll() {
-    if (!tts || (!tts.voiceId && tts.ttsEngine === "supertone")) {
-      alert("사이드바 TTS 탭에서 음성을 선택해주세요.");
-      return;
-    }
-    if (tts.ttsEngine === "supertone" && !supertoneKey) {
-      setShowApiModal(true);
-      return;
-    }
+    if (!apiKey) { setShowApiModal(true); return; }
     const pending = scenes.filter((s) => s.script && !s.ttsAudio);
     if (!pending.length) { alert("생성할 TTS가 없습니다."); return; }
     setIsTtsAll(true);
+    const voiceName = tts?.voiceName || "Kore";
     for (const scene of pending) {
       try {
-        const audio = await generateTtsForScene(scene, tts, supertoneKey);
-        setScenes((prev) => prev.map((s) => s.id === scene.id ? { ...s, ttsAudio: audio } : s));
+        const audio = await generateTTS(scene.script, voiceName);
+        setScenes((prev) => prev.map((s) => s.sceneNumber === scene.sceneNumber ? { ...s, ttsAudio: audio } : s));
       } catch (err) {
         console.error(`씬 ${scene.sceneNumber} TTS 실패:`, err.message);
       }
@@ -382,7 +406,7 @@ export default function App() {
   }
 
   const doneCount = scenes.filter((s) => s.status === "done").length;
-  const estimatedScenes = script.length > 0 ? Math.max(1, Math.ceil(script.length / (settings.sceneDuration * 7))) : 0;
+  const estimatedScenes = script.length > 0 ? Math.max(1, Math.ceil(script.length / (settings.sceneDuration * 8))) : 0;
   const isWorking = isSplitting || isGeneratingAll;
 
   return (
@@ -409,8 +433,9 @@ export default function App() {
         bgmFile={bgmFile}
         onBgmFileChange={setBgmFile}
         scenes={scenes}
-        supertoneKey={supertoneKey}
         onTtsGenerated={handleTtsGenerated}
+        referenceImage={referenceImage}
+        onReferenceImageChange={setReferenceImage}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -425,7 +450,6 @@ export default function App() {
             {[
               { id: "scene", label: "SCENE 생성기" },
               { id: "script", label: "대본 생성기" },
-              { id: "youtube", label: "YouTube 분석" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -474,20 +498,6 @@ export default function App() {
           />
         )}
 
-        {/* YouTube 분석 탭 */}
-        {activeTab === "youtube" && (
-          <YoutubeAnalyzer
-            apiKey={apiKey}
-            onApiKeyClick={() => setShowApiModal(true)}
-            language={settings.language}
-            sceneDuration={settings.sceneDuration}
-            onUseScript={(newTitle, newScript) => {
-              setTitle(newTitle);
-              setScript(newScript);
-              setActiveTab("scene");
-            }}
-          />
-        )}
 
         {/* SCENE 생성기 탭 */}
         {activeTab === "scene" && (
@@ -767,6 +777,7 @@ export default function App() {
                       onImageSelected={handleImageSelected}
                       sceneMotionSettings={sceneMotionSettings[scene.sceneNumber] || null}
                       onSceneMotionSave={handleSceneMotionSave}
+                      onTTSGenerate={handleGenerateTTS}
                     />
                   ))}
                 </div>

@@ -68,11 +68,10 @@ export const DEFAULT_BGM = {
 // Default TTS
 export const DEFAULT_TTS = {
   genre: "economy",
-  voiceId: "763d5f200a9f5808056733",
-  voiceName: "Shibuya",
+  voiceName: "Kore",
   speed: 1,
   sceneDuration: 7,
-  ttsEngine: "supertone",
+  ttsEngine: "gemini",
   voicevoxSpeakerId: 3,
   voicevoxSpeed: 1,
   voicevoxPitch: 0,

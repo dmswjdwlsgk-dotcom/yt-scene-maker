@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import { createRequire } from "module";
 import { execFile } from "child_process";
-import { writeFile, readFile, unlink, mkdir } from "fs/promises";
+import { writeFile, readFile, unlink, mkdir, rm } from "fs/promises";
+import { randomUUID } from "crypto";
 import { existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -258,94 +259,100 @@ app.use("/api/supertone", async (req, res) => {
   }
 });
 
-// YouTube proxy (to avoid CORS when fetching YouTube page info)
-app.get("/api/youtube/info", async (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: "url required" });
+
+// CapCut 프로젝트 직접 설치
+app.post("/install-capcut", async (req, res) => {
+  const { draftInfoJson, draftMetaJson, images, capCutRootPath } = req.body;
+
+  const rootPath = capCutRootPath || `${process.env.HOME}/Movies/CapCut/User Data/Projects/com.lveditor.draft`;
+  // UUID with dashes — CapCut 내부 형식과 동일
+  const draftId = randomUUID().toUpperCase();
+  const draftFolder = join(rootPath, draftId);
+  const nowUs = Date.now() * 1000;
 
   try {
-    const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    // 폴더 생성
+    await mkdir(draftFolder, { recursive: true });
+    await mkdir(join(draftFolder, "draft_settings"), { recursive: true });
 
-// YouTube transcript extraction
-app.get("/api/transcript/:videoId", async (req, res) => {
-  const { videoId } = req.params;
-  const { lang = "ko" } = req.query;
+    // 고정 보일러플레이트 파일들
+    await writeFile(join(draftFolder, "draft_agency_config.json"),
+      JSON.stringify({ is_auto_agency_enabled: false, is_auto_agency_popup: false, is_single_agency_mode: false, marterials: null, use_converter: false, video_resolution: 720 }));
+    await writeFile(join(draftFolder, "draft_biz_config.json"), "{}");
+    await writeFile(join(draftFolder, "performance_opt_info.json"),
+      JSON.stringify({ manual_cancle_precombine_segs: null, need_auto_precombine_segs: null }));
 
-  if (!videoId) return res.status(400).json({ error: "videoId required" });
+    // draft_info.json — 플레이스홀더를 실제 절대경로로 교체
+    const infoStr = draftInfoJson.replace(/__DRAFT_FOLDER__/g, draftFolder);
+    await writeFile(join(draftFolder, "draft_info.json"), infoStr);
 
-  // Try to fetch captions from YouTube
-  try {
-    // Method 1: Fetch YouTube page to find caption tracks
-    const pageUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const pageRes = await fetch(pageUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
-      },
-    });
-    const html = await pageRes.text();
+    // draft_meta_info.json — 경로 교체
+    const metaStr = draftMetaJson
+      .replace(/__DRAFT_FOLDER__/g, draftFolder)
+      .replace(/__ROOT_PATH__/g, rootPath)
+      .replace(/__DRAFT_ID__/g, draftId);
+    const metaObj = JSON.parse(metaStr);
+    const draftName = metaObj.draft_name || "Project";
+    const tmDuration = metaObj.tm_duration || 0;
+    await writeFile(join(draftFolder, "draft_meta_info.json"), metaStr);
 
-    // Extract caption tracks from ytInitialPlayerResponse
-    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/s);
-    if (!playerResponseMatch) {
-      return res.status(404).json({ error: "YouTube 자막 데이터를 찾을 수 없습니다.", details: { method1: "ytInitialPlayerResponse not found" } });
+    // 이미지 저장
+    for (const img of images || []) {
+      const buf = Buffer.from(img.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+      await writeFile(join(draftFolder, img.name), buf);
     }
 
-    let playerResponse;
+    // root_meta_info.json 업데이트 — CapCut 프로젝트 레지스트리에 등록
+    const rootMetaFile = join(rootPath, "root_meta_info.json");
+    let rootMeta = { all_draft_store: [], draft_ids: 0, root_path: rootPath };
     try {
-      playerResponse = JSON.parse(playerResponseMatch[1]);
-    } catch {
-      return res.status(500).json({ error: "YouTube 데이터 파싱 실패" });
-    }
+      const existing = await readFile(rootMetaFile, "utf8");
+      rootMeta = JSON.parse(existing);
+    } catch { /* 없으면 새로 생성 */ }
 
-    const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-    if (!captions || captions.length === 0) {
-      return res.status(404).json({ error: "이 영상에는 자막이 없습니다.", details: { method1: "no captions found" } });
-    }
-
-    // Find preferred language track
-    let track = captions.find((t) => t.languageCode === lang)
-      || captions.find((t) => t.languageCode === "ko")
-      || captions.find((t) => t.languageCode === "en")
-      || captions[0];
-
-    const captionUrl = track.baseUrl + "&fmt=json3";
-    const captionRes = await fetch(captionUrl);
-    if (!captionRes.ok) {
-      return res.status(500).json({ error: "자막 파일을 가져오지 못했습니다." });
-    }
-
-    const captionData = await captionRes.json();
-    const events = captionData.events || [];
-
-    const segments = events
-      .filter((e) => e.segs)
-      .map((e) => ({
-        text: e.segs.map((s) => s.utf8 || "").join("").replace(/\n/g, " ").trim(),
-        offset: Math.round((e.tStartMs || 0) / 1000),
-        duration: Math.round((e.dDurationMs || 3000) / 1000),
-      }))
-      .filter((s) => s.text);
-
-    const fullText = segments.map((s) => s.text).join(" ");
-
-    res.json({
-      videoId,
-      language: track.languageCode,
-      segments,
-      fullText,
-      wordCount: fullText.length,
-      method: "youtube_captions",
+    rootMeta.all_draft_store = rootMeta.all_draft_store || [];
+    rootMeta.all_draft_store.unshift({
+      cloud_draft_cover: false,
+      cloud_draft_sync: false,
+      draft_cloud_last_action_download: false,
+      draft_cloud_purchase_info: "",
+      draft_cloud_template_id: "",
+      draft_cloud_tutorial_info: "",
+      draft_cloud_videocut_purchase_info: "",
+      draft_cover: join(draftFolder, "draft_cover.jpg"),
+      draft_fold_path: draftFolder,
+      draft_id: draftId,
+      draft_is_ai_shorts: false,
+      draft_is_cloud_temp_draft: false,
+      draft_is_invisible: false,
+      draft_is_web_article_video: false,
+      draft_json_file: join(draftFolder, "draft_info.json"),
+      draft_name: draftName,
+      draft_new_version: "",
+      draft_root_path: rootPath,
+      draft_timeline_materials_size: 0,
+      draft_type: "",
+      draft_web_article_video_enter_from: "",
+      streaming_edit_draft_ready: true,
+      tm_draft_cloud_completed: "",
+      tm_draft_cloud_entry_id: -1,
+      tm_draft_cloud_modified: 0,
+      tm_draft_cloud_parent_entry_id: -1,
+      tm_draft_cloud_space_id: -1,
+      tm_draft_cloud_user_id: -1,
+      tm_draft_create: nowUs,
+      tm_draft_modified: nowUs,
+      tm_draft_removed: 0,
+      tm_duration: tmDuration,
     });
+    rootMeta.draft_ids = (rootMeta.draft_ids || 0) + 1;
+    rootMeta.root_path = rootPath;
+    await writeFile(rootMetaFile, JSON.stringify(rootMeta, null, 2));
+
+    res.json({ success: true, draftId, draftFolder });
   } catch (err) {
-    console.error("[transcript] Error:", err.message);
-    res.status(500).json({ error: err.message, details: { method1: err.message } });
+    console.error("[install-capcut]", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

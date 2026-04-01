@@ -487,24 +487,59 @@ export async function renderSceneToFrames({
 // ── WebCodecs H264 encoder ────────────────────────────────────────────────────
 async function encodeFramesToH264(frames, fps, width, height, onProgress) {
   if (typeof VideoEncoder === "undefined") return null;
+
+  // 지원 코덱 순서대로 확인
+  const CODECS = ["avc1.42E01F", "avc1.4D001F", "avc1.640028", "avc1.42001E"];
+  let supportedCodec = null;
+  for (const codec of CODECS) {
+    try {
+      const r = await VideoEncoder.isConfigSupported({ codec, width, height, bitrate: 8_000_000, framerate: fps });
+      if (r.supported) { supportedCodec = codec; break; }
+    } catch {}
+  }
+  if (!supportedCodec) { console.warn("[VideoEncoder] 지원 코덱 없음, WASM으로 폴백"); return null; }
+
   const chunks = [];
+  let encoderError = null;
+
   const encoder = new VideoEncoder({
     output: (chunk) => { const buf = new Uint8Array(chunk.byteLength); chunk.copyTo(buf); chunks.push(buf); },
-    error: (e) => console.error("[VideoEncoder]", e),
+    error: (e) => { encoderError = e; console.error("[VideoEncoder] error:", e); },
   });
-  encoder.configure({ codec: "avc1.42E01F", width, height, bitrate: 8_000_000, framerate: fps, hardwareAcceleration: "prefer-hardware", latencyMode: "quality" });
+
+  try {
+    encoder.configure({ codec: supportedCodec, width, height, bitrate: 8_000_000, framerate: fps, latencyMode: "quality" });
+  } catch (e) {
+    console.warn("[VideoEncoder] configure 실패:", e); return null;
+  }
+
+  // 비동기 configure 에러 대기
+  await new Promise((r) => setTimeout(r, 50));
+  if (encoderError || encoder.state === "closed") { console.warn("[VideoEncoder] configure 후 에러"); return null; }
+
   const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext("2d");
+
   for (let i = 0; i < frames.length; i++) {
+    if (encoderError || encoder.state !== "configured") break;
     ctx.putImageData(frames[i], 0, 0);
-    const frame = new VideoFrame(canvas, { timestamp: (i / fps) * 1e6 });
-    encoder.encode(frame, { keyFrame: i % 60 === 0 });
+    const frame = new VideoFrame(canvas, { timestamp: Math.round((i / fps) * 1e6) });
+    try {
+      encoder.encode(frame, { keyFrame: i % 30 === 0 });
+    } catch (e) {
+      frame.close(); encoderError = e; break;
+    }
     frame.close();
     if (onProgress) onProgress(i + 1, frames.length);
     if (i % 10 === 0) await new Promise((r) => setTimeout(r, 0));
   }
-  await encoder.flush();
-  encoder.close();
+
+  if (encoderError) { console.warn("[VideoEncoder] encode 에러, WASM 폴백:", encoderError); return null; }
+
+  try { await encoder.flush(); } catch (e) { console.warn("[VideoEncoder] flush 에러:", e); return null; }
+  if (encoder.state !== "closed") encoder.close();
+  if (chunks.length === 0) return null;
+
   const total = chunks.reduce((s, c) => s + c.byteLength, 0);
   const result = new Uint8Array(total);
   let offset = 0;
@@ -572,15 +607,15 @@ export async function exportScene({ scene, settings, motion, effects, subtitle, 
 async function encodeWithFFmpegWasm(frames, duration, fps, width, height, scene, onProgress) {
   let FFmpeg;
   try {
-    const mod = await import(/* @vite-ignore */ "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/esm/index.js");
+    const mod = await import("@ffmpeg/ffmpeg");
     FFmpeg = mod.FFmpeg;
   } catch {
     throw new Error("FFmpeg WASM를 불러올 수 없습니다. 로컬 서버(server/index.js)를 실행해주세요.");
   }
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
-    coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
-    wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
+    coreURL: "/ffmpeg-core.js",
+    wasmURL: "/ffmpeg-core.wasm",
   });
 
   for (let i = 0; i < frames.length; i++) {
@@ -634,7 +669,7 @@ async function mixBgm(mp4Data, bgmDataUrl, volume, server, onProgress) {
   // FFmpeg WASM fallback
   let FFmpeg;
   try {
-    const mod = await import(/* @vite-ignore */ "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/esm/index.js");
+    const mod = await import("@ffmpeg/ffmpeg");
     FFmpeg = mod.FFmpeg;
   } catch {
     console.warn("[BGM] FFmpeg WASM 로드 실패, BGM 없이 진행");
@@ -643,8 +678,8 @@ async function mixBgm(mp4Data, bgmDataUrl, volume, server, onProgress) {
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
-    coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
-    wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
+    coreURL: "/ffmpeg-core.js",
+    wasmURL: "/ffmpeg-core.wasm",
   });
 
   const bgmData = Uint8Array.from(atob(bgmBase64), c => c.charCodeAt(0));
