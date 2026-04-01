@@ -231,18 +231,18 @@ export const MOTION_EFFECTS = [
 export const FONTS = [
   { value: "'Noto Sans KR', 'Malgun Gothic', sans-serif", label: "Noto Sans KR", category: "기본" },
   { value: "'Pretendard', 'Noto Sans KR', sans-serif", label: "Pretendard", category: "기본" },
-  { value: "'NanumGothic', 'Noto Sans KR', sans-serif", label: "나눔고딕", category: "기본" },
-  { value: "'NanumBarunGothic', 'Noto Sans KR', sans-serif", label: "나눔바른고딕", category: "기본" },
+  { value: "'Nanum Gothic', 'Noto Sans KR', sans-serif", label: "나눔고딕", category: "기본" },
+  { value: "'Nanum Barun Gothic', 'Noto Sans KR', sans-serif", label: "나눔바른고딕", category: "기본" },
   { value: "'Malgun Gothic', 'Noto Sans KR', sans-serif", label: "맑은 고딕", category: "기본" },
   { value: "'GongGothicBold', 'Noto Sans KR', sans-serif", label: "이사만루체 Bold", category: "임팩트" },
   { value: "'GongGothicMedium', 'Noto Sans KR', sans-serif", label: "이사만루체 Medium", category: "임팩트" },
-  { value: "'BlackHanSans', 'Noto Sans KR', sans-serif", label: "블랙한산스", category: "임팩트" },
+  { value: "'Black Han Sans', 'Noto Sans KR', sans-serif", label: "블랙한산스", category: "임팩트" },
   { value: "'GmarketSans', 'Noto Sans KR', sans-serif", label: "지마켓 산스", category: "임팩트" },
   { value: "Impact, 'Noto Sans KR', sans-serif", label: "Impact", category: "임팩트" },
-  { value: "'NanumMyeongjo', 'Noto Sans KR', serif", label: "나눔명조", category: "역사/다큐" },
+  { value: "'Nanum Myeongjo', 'Noto Sans KR', serif", label: "나눔명조", category: "역사/다큐" },
   { value: "Georgia, 'Noto Sans KR', serif", label: "Georgia", category: "역사/다큐" },
   { value: "'Times New Roman', 'Noto Sans KR', serif", label: "Times New Roman", category: "역사/다큐" },
-  { value: "'NanumSquareRound', 'Noto Sans KR', sans-serif", label: "나눔스퀘어라운드", category: "정보성" },
+  { value: "'Nanum Square Round', 'Noto Sans KR', sans-serif", label: "나눔스퀘어라운드", category: "정보성" },
   { value: "Arial, 'Noto Sans KR', sans-serif", label: "Arial", category: "정보성" },
 ];
 
