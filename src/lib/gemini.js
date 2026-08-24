@@ -139,13 +139,16 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
   const ratio = ratioMap[aspectRatio] || "LANDSCAPE_16_9";
 
   // 원본 앱과 동일한 모델 선택 로직
+  // ⚠️ "-preview" 접미사가 붙은 모델 ID는 이미 정식 승격되며 사라진 이름 —
+  //    존재하지 않는 모델이라 매번 생성 실패로 이어졌음. 자매 프로젝트 cineboard의
+  //    검증된 모델 ID(-preview 없음)로 교체.
   const modelId = imageModel.includes("Imagen 4")
     ? "imagen-4.0-ultra-generate-001"
     : imageModel.includes("Gemini 3 Pro")
-    ? "gemini-3-pro-image-preview"
+    ? "gemini-3-pro-image"
     : imageModel.includes("Nano1")
     ? "gemini-2.5-flash-image"         // 나노바나나1
-    : "gemini-3.1-flash-image-preview"; // 나노바나나2 (Fast, 기본값)
+    : "gemini-3.1-flash-image";        // 나노바나나2 (Fast, 기본값)
 
   // Imagen 4 Ultra: generateImages API 사용
   if (modelId.includes("imagen")) {
