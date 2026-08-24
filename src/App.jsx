@@ -81,6 +81,7 @@ export default function App() {
 
   const [isSplitting, setIsSplitting] = useState(false);
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
   const [isSuggestingTitles, setIsSuggestingTitles] = useState(false);
   const [isTtsAll, setIsTtsAll] = useState(false);
   const [titleSuggestions, setTitleSuggestions] = useState([]);
@@ -149,12 +150,14 @@ export default function App() {
       const baseScenes = rawScenes.map((s) => ({ ...s, id: generateId(), status: "pending", imageBase64: null, imagePrompt: null, error: null }));
       setScenes(baseScenes);
       setIsSplitting(false);
+      setIsGeneratingPrompts(true);
 
       // 이미지 프롬프트 병렬 생성
       const opts = getImageOptions();
       const CONCURRENCY = 5;
       const queue = [...baseScenes];
       let completed = 0;
+      let failedCount = 0;
       setGenerationProgress({ current: 0, total: baseScenes.length });
       const worker = async () => {
         while (queue.length > 0) {
@@ -162,9 +165,11 @@ export default function App() {
           if (!scene) break;
           try {
             const imagePrompt = await generateImagePrompt(scene, opts);
-            setScenes((prev) => prev.map((s) => s.sceneNumber === scene.sceneNumber ? { ...s, imagePrompt } : s));
+            setScenes((prev) => prev.map((s) => s.sceneNumber === scene.sceneNumber ? { ...s, imagePrompt, status: "pending", error: null } : s));
           } catch (e) {
+            failedCount++;
             console.warn(`씬 ${scene.sceneNumber} 프롬프트 생성 실패:`, e.message);
+            setScenes((prev) => prev.map((s) => s.sceneNumber === scene.sceneNumber ? { ...s, status: "error", error: e.message || "프롬프트 생성 실패" } : s));
           }
           completed++;
           setGenerationProgress({ current: completed, total: baseScenes.length });
@@ -172,9 +177,14 @@ export default function App() {
       };
       await Promise.all(Array(Math.min(CONCURRENCY, baseScenes.length)).fill(null).map(() => worker()));
       setGenerationProgress({ current: 0, total: 0 });
+      setIsGeneratingPrompts(false);
+      if (failedCount > 0) {
+        setSplitError(`${failedCount}/${baseScenes.length}개 씬의 프롬프트 생성에 실패했습니다. 각 씬 카드의 오류 메시지를 확인해주세요.`);
+      }
     } catch (err) {
       setSplitError(err.message);
       setIsSplitting(false);
+      setIsGeneratingPrompts(false);
     }
   }
 
@@ -412,7 +422,7 @@ export default function App() {
 
   const doneCount = scenes.filter((s) => s.status === "done").length;
   const estimatedScenes = script.length > 0 ? splitScriptIntoScenes(script, settings.sceneDuration).length : 0;
-  const isWorking = isSplitting || isGeneratingAll;
+  const isWorking = isSplitting || isGeneratingAll || isGeneratingPrompts;
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#0E1117", color: "#fff", overflow: "hidden" }}>
@@ -631,7 +641,13 @@ export default function App() {
                   fontFamily: "inherit", whiteSpace: "nowrap",
                 }}
               >
-                {isSplitting ? <Spinner /> : "📝 프롬프트만"}
+                {isSplitting ? (
+                  <Spinner />
+                ) : isGeneratingPrompts ? (
+                  <><Spinner /> 생성 중... {generationProgress.current}/{generationProgress.total}</>
+                ) : (
+                  "📝 프롬프트만"
+                )}
               </button>
 
               {/* After scenes exist */}
