@@ -4,26 +4,127 @@ import { getStylePrompt } from "./styles.js";
 let geminiAi = null;   // Gemini API 인스턴스
 let vertexAi = null;   // Vertex AI 인스턴스
 let currentMode = "gemini"; // "gemini" | "vertex"
+let currentServiceAccount = null; // Vertex 서비스 계정 JSON (토큰 재발급용)
 
 export function initGemini(apiKey) {
   geminiAi = new GoogleGenAI({ apiKey });
   currentMode = vertexAi ? "vertex" : "gemini";
 }
 
-export function initVertex(vertexKey) {
-  if (!vertexKey) {
+// ─── Vertex AI 서비스 계정 OAuth2 인증 ────────────────────────────────────────
+// ⚠️ Vertex의 Gemini 호출(PredictionService.GenerateContent)은 단순 API 키 인증을
+//    지원하지 않고 "401 API keys are not supported by this API"로 거부한다 —
+//    OAuth2 액세스 토큰(서비스 계정 인증)이 필요함. 서비스 계정 JSON으로 직접
+//    JWT를 서명해 토큰을 발급받는다 (cineboard 프로젝트에서 이미 검증된 방식 이식).
+let _vertexToken = null;
+let _vertexTokenExpiry = 0;
+
+function base64url(str) {
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function getVertexAccessToken(serviceAccount) {
+  if (_vertexToken && Date.now() < _vertexTokenExpiry - 60000) return _vertexToken;
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: serviceAccount.client_email,
+    sub: serviceAccount.client_email,
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+  };
+  const unsigned = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
+
+  const pemClean = serviceAccount.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
+    .replace(/\n/g, "").replace(/\r/g, "");
+  const binary = atob(pemClean);
+  const keyData = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) keyData[i] = binary.charCodeAt(i);
+
+  const key = await crypto.subtle.importKey(
+    "pkcs8", keyData.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned));
+  const jwt = `${unsigned}.${base64url(String.fromCharCode(...new Uint8Array(sig)))}`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Vertex 토큰 발급 실패: ${JSON.stringify(data)}`);
+
+  _vertexToken = data.access_token;
+  _vertexTokenExpiry = Date.now() + (data.expires_in || 3600) * 1000;
+  return _vertexToken;
+}
+
+// fetch 인터셉터: GoogleGenAI SDK가 자동으로 붙이는 x-goog-api-key 헤더가
+// Authorization: Bearer 토큰과 충돌하므로 Vertex 요청에서만 제거하고,
+// 토큰 만료(401) 시 재발급 후 자동 재시도한다.
+let _fetchPatched = false;
+function patchFetch() {
+  if (_fetchPatched) return;
+  _fetchPatched = true;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (!url.includes("aiplatform.googleapis.com")) return original(input, init);
+
+    if (init?.headers) {
+      if (init.headers instanceof Headers) init.headers.delete("x-goog-api-key");
+      else if (Array.isArray(init.headers)) init.headers = init.headers.filter(([k]) => k.toLowerCase() !== "x-goog-api-key");
+      else if (typeof init.headers === "object") { delete init.headers["x-goog-api-key"]; delete init.headers["X-Goog-Api-Key"]; }
+    }
+
+    let res = await original(input, init);
+
+    if (res.status === 401 && currentServiceAccount) {
+      console.warn("[VERTEX AUTH] 토큰 만료 감지 — 재발급 후 재시도");
+      _vertexToken = null;
+      _vertexTokenExpiry = 0;
+      try {
+        const newToken = await getVertexAccessToken(currentServiceAccount);
+        const newInit = { ...init, headers: { ...(init?.headers || {}), Authorization: `Bearer ${newToken}` } };
+        res = await original(input, newInit);
+      } catch (e) {
+        console.error("[VERTEX AUTH] 토큰 재발급 실패:", e);
+      }
+    }
+    return res;
+  };
+}
+
+// serviceAccount: GCP 서비스 계정 JSON 전체 (client_email, private_key, project_id 포함)
+export async function initVertex(serviceAccount) {
+  if (!serviceAccount) {
     vertexAi = null;
+    currentServiceAccount = null;
     currentMode = "gemini";
     return;
   }
-  // Vertex AI Express - API key로 접근 (google/genai SDK의 Vertex AI Express 지원)
-  // ⚠️ vertexai:true를 빼먹으면 SDK가 여전히 "일반 Gemini API" 경로 규칙(/v1beta/models/{model})으로
-  //    요청을 만드는데, 그걸 Vertex 서버(aiplatform.googleapis.com)로 보내니 존재하지 않는 경로가 되어
-  //    매 호출이 속 빈 404로 실패했음. vertexai:true를 켜야 SDK가 Vertex 전용 경로
-  //    (publishers/google/models/{model})와 올바른 API 버전(v1beta1)을 자동으로 씀.
+  const token = await getVertexAccessToken(serviceAccount);
+  patchFetch();
+  currentServiceAccount = serviceAccount;
+  // ⚠️ vertexai:true는 일부러 켜지 않는다 — 그러면 SDK가 x-goog-api-key 인증을
+  //    기대하는 Vertex Express 경로로 빠지는데, Express는 GenerateContent를
+  //    지원하지 않는다(401). 대신 apiVersion 문자열에 project/location/publisher
+  //    경로를 직접 끼워넣고, 실제 인증은 Authorization 헤더의 Bearer 토큰이 담당한다.
   vertexAi = new GoogleGenAI({
-    apiKey: vertexKey,
-    vertexai: true,
+    apiKey: "VERTEX_MODE", // 생성자가 apiKey를 요구해서 넣는 더미 값 — 실제로는 안 쓰임(patchFetch가 헤더에서 제거)
+    httpOptions: {
+      baseUrl: "https://aiplatform.googleapis.com",
+      apiVersion: `v1beta1/projects/${serviceAccount.project_id}/locations/global/publishers/google`,
+      headers: { Authorization: `Bearer ${token}` },
+    },
   });
   currentMode = "vertex";
 }
@@ -153,12 +254,12 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
     : "gemini-3.1-flash-image";        // 나노바나나2 (Fast, 기본값)
 
   // Imagen 4 Ultra: generateImages API 사용
+  // ⚠️ Vertex 모드에서도 bare modelId를 그대로 넘긴다 — initVertex()가 apiVersion 문자열에
+  //    이미 .../publishers/google 경로를 심어놨고, SDK가 자동으로 models/{modelId}를 덧붙이므로
+  //    여기서 수동으로 publishers/google/models/를 붙이면 경로가 두 번 겹쳐 깨진다.
   if (modelId.includes("imagen")) {
-    const imagenModel = currentMode === "vertex"
-      ? `publishers/google/models/${modelId}`
-      : modelId;
     const response = await ai.models.generateImages({
-      model: imagenModel,
+      model: modelId,
       prompt: imagePrompt,
       config: { numberOfImages: 1, aspectRatio: ratio },
     });

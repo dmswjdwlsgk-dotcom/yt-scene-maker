@@ -7,7 +7,7 @@ import ScriptGenerator from "./components/ScriptGenerator.jsx";
 import ExportModal from "./components/ExportModal.jsx";
 import {
   loadApiKey,
-  loadVertexKey,
+  loadVertexJson,
   loadPexelsKey,
   loadPixabayKey,
   saveSettings,
@@ -98,8 +98,10 @@ export default function App() {
   useEffect(() => {
     if (apiKey) {
       initGemini(apiKey);
-      const vertexKey = loadVertexKey();
-      if (vertexKey) initVertex(vertexKey);
+      const vertexJson = loadVertexJson();
+      if (vertexJson) {
+        initVertex(vertexJson).catch((e) => console.error("Vertex 초기화 실패:", e.message));
+      }
     }
   }, [apiKey]);
   useEffect(() => { saveSettings(settings); }, [settings]);

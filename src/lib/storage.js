@@ -3,7 +3,7 @@
 const PROJECTS_KEY = "yt_scene_maker_projects";
 const SETTINGS_KEY = "yt_scene_maker_settings";
 const API_KEY_KEY = "yt_scene_maker_apikey";
-const VERTEX_KEY_KEY = "yt_scene_maker_vertexkey";
+const VERTEX_JSON_KEY = "yt_scene_maker_vertex_json";
 
 export function saveApiKey(key) {
   localStorage.setItem(API_KEY_KEY, key);
@@ -13,16 +13,27 @@ export function loadApiKey() {
   return localStorage.getItem(API_KEY_KEY) || "";
 }
 
-export function saveVertexKey(key) {
-  if (key) {
-    localStorage.setItem(VERTEX_KEY_KEY, key);
-  } else {
-    localStorage.removeItem(VERTEX_KEY_KEY);
+// Vertex AI 서비스 계정 JSON (client_email, private_key, project_id 등) — 평문 노출 방지를 위해 base64로 보관
+export function saveVertexJson(json) {
+  try {
+    if (json) {
+      localStorage.setItem(VERTEX_JSON_KEY, btoa(encodeURIComponent(JSON.stringify(json))));
+    } else {
+      localStorage.removeItem(VERTEX_JSON_KEY);
+    }
+  } catch (e) {
+    console.error("Vertex 서비스 계정 JSON 저장 실패:", e);
   }
 }
 
-export function loadVertexKey() {
-  return localStorage.getItem(VERTEX_KEY_KEY) || "";
+export function loadVertexJson() {
+  try {
+    const raw = localStorage.getItem(VERTEX_JSON_KEY);
+    if (!raw) return null;
+    return JSON.parse(decodeURIComponent(atob(raw)));
+  } catch {
+    return null;
+  }
 }
 
 export function saveSettings(settings) {

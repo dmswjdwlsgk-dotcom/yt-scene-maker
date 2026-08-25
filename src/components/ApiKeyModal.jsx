@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
   saveApiKey, loadApiKey,
-  saveVertexKey, loadVertexKey,
+  saveVertexJson, loadVertexJson,
   savePexelsKey, loadPexelsKey,
   savePixabayKey, loadPixabayKey,
 } from "../lib/storage.js";
@@ -14,48 +14,70 @@ function loadGcsearchKey() { return localStorage.getItem(GCSEARCH_KEY) || ""; }
 
 export default function ApiKeyModal({ onClose }) {
   const [geminiKey, setGeminiKey] = useState(loadApiKey());
-  const [vertexKey, setVertexKey] = useState(loadVertexKey());
+  const [vertexJson, setVertexJson] = useState(loadVertexJson());
+  const [vertexFileError, setVertexFileError] = useState("");
   const [pexelsKey, setPexelsKey] = useState(loadPexelsKey());
   const [pixabayKey, setPixabayKey] = useState(loadPixabayKey());
   const [gcsearchKey, setGcsearchKey] = useState(loadGcsearchKey());
 
   const [saveGemini, setSaveGemini] = useState(!!loadApiKey());
-  const [saveVertex, setSaveVertex] = useState(!!loadVertexKey());
+  const [saveVertex, setSaveVertex] = useState(!!loadVertexJson());
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const keyCount =
     (geminiKey.trim() ? 1 : 0) +
-    (vertexKey.trim() ? 1 : 0) +
+    (vertexJson ? 1 : 0) +
     (pexelsKey.trim() ? 1 : 0) +
     (pixabayKey.trim() ? 1 : 0) +
     (gcsearchKey.trim() ? 1 : 0);
 
-  function handleSave() {
+  function handleVertexFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일 재선택 가능하도록
+    if (!file) return;
+    setVertexFileError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result);
+        if (!json.client_email || !json.private_key || !json.project_id) {
+          setVertexFileError("서비스 계정 JSON 형식이 아닙니다 (client_email / private_key / project_id 필요).");
+          return;
+        }
+        setVertexJson(json);
+        setSaveVertex(true);
+      } catch {
+        setVertexFileError("JSON 파일을 읽을 수 없습니다.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleSave() {
     if (!geminiKey.trim()) {
       setError("Google Gemini API 키는 필수입니다.");
       return;
     }
+    setError("");
+    setSaving(true);
 
-    if (saveGemini) saveApiKey(geminiKey.trim());
-    else saveApiKey(geminiKey.trim());
-
-    if (saveVertex && vertexKey.trim()) {
-      saveVertexKey(vertexKey.trim());
-    } else if (!saveVertex) {
-      saveVertexKey("");
-    }
-
+    saveApiKey(geminiKey.trim());
+    saveVertexJson(saveVertex ? vertexJson : null);
     savePexelsKey(pexelsKey.trim());
     savePixabayKey(pixabayKey.trim());
     saveGcsearchKey(gcsearchKey.trim());
 
     initGemini(geminiKey.trim());
-    if (vertexKey.trim()) {
-      initVertex(vertexKey.trim());
-    } else {
-      initVertex("");
+    try {
+      await initVertex(vertexJson || null);
+    } catch (e) {
+      setSaving(false);
+      setError(`Vertex 인증 실패: ${e.message}`);
+      return;
     }
 
+    setSaving(false);
     onClose(geminiKey.trim());
   }
 
@@ -167,23 +189,43 @@ export default function ApiKeyModal({ onClose }) {
           <div style={sectionStyle}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#60A5FA" }}>☁️ Vertex AI Express Key</h3>
-                <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>입력하면 이미지 생성을 Vertex AI로 전환합니다.</p>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#60A5FA" }}>☁️ Vertex AI 서비스 계정</h3>
+                <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+                  업로드하면 이미지·프롬프트 생성을 Vertex AI로 전환합니다. (Vertex의 Gemini 호출은
+                  OAuth2 인증이 필요해 단순 API 키가 아닌 서비스 계정 JSON 키가 필요합니다.)
+                </p>
               </div>
               <span style={{ fontSize: 11, background: "#374151", color: "#9CA3AF", padding: "3px 10px", borderRadius: 20, fontWeight: 700 }}>선택</span>
             </div>
-            <input
-              type="password"
-              style={{ ...inputStyle, border: vertexKey ? "1px solid #60A5FA" : "1px solid #2D3748" }}
-              placeholder="Vertex AI Express API Key"
-              value={vertexKey}
-              onChange={(e) => setVertexKey(e.target.value)}
-            />
-            {vertexKey.trim() && (
-              <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(96,165,250,0.1)", borderRadius: 8, fontSize: 11, color: "#60A5FA" }}>
-                ☁️ Vertex AI 모드 활성화 — 이미지 생성 시 Vertex AI 엔드포인트를 사용합니다.
+
+            {vertexJson ? (
+              <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(96,165,250,0.1)", border: "1px solid #60A5FA", borderRadius: 8 }}>
+                <div style={{ fontSize: 12, color: "#60A5FA", fontWeight: 700 }}>☁️ 서비스 계정 로드됨</div>
+                <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4, wordBreak: "break-all" }}>
+                  project: {vertexJson.project_id}<br />
+                  account: {vertexJson.client_email}
+                </div>
+                <button
+                  onClick={() => { setVertexJson(null); setSaveVertex(false); }}
+                  style={{ marginTop: 8, background: "none", border: "1px solid #4B5563", color: "#9CA3AF", fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  제거
+                </button>
               </div>
+            ) : (
+              <label style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginTop: 12, padding: "14px", border: "1px dashed #2D3748", borderRadius: 10,
+                color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+              }}>
+                📁 서비스 계정 JSON 파일 선택
+                <input type="file" accept="application/json,.json" onChange={handleVertexFile} style={{ display: "none" }} />
+              </label>
             )}
+            {vertexFileError && (
+              <div style={{ marginTop: 8, fontSize: 11, color: "#FCA5A5" }}>❌ {vertexFileError}</div>
+            )}
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
               <div style={{ fontSize: 13, color: "#D1D5DB", fontWeight: 600 }}>브라우저에 저장</div>
               <button onClick={() => setSaveVertex(!saveVertex)} style={toggleStyle(saveVertex)}>
@@ -281,19 +323,20 @@ export default function ApiKeyModal({ onClose }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "#6B7280" }}>
               {keyCount}개 키 등록됨
-              {vertexKey.trim() && <span style={{ color: "#60A5FA", marginLeft: 8 }}>☁️ Vertex 활성</span>}
+              {vertexJson && <span style={{ color: "#60A5FA", marginLeft: 8 }}>☁️ Vertex 활성</span>}
             </span>
             <button
               onClick={handleSave}
+              disabled={saving}
               style={{
                 padding: "12px 32px",
-                background: "linear-gradient(90deg, #F97316, #EF4444)",
+                background: saving ? "#4B5563" : "linear-gradient(90deg, #F97316, #EF4444)",
                 color: "#fff", fontWeight: 800, fontSize: 15,
-                borderRadius: 14, border: "none", cursor: "pointer",
+                borderRadius: 14, border: "none", cursor: saving ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
             >
-              완료
+              {saving ? "확인 중..." : "완료"}
             </button>
           </div>
 
