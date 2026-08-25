@@ -92,7 +92,7 @@ export async function suggestTitles(topic, genre) {
 ["제목1", "제목2", "제목3", "제목4", "제목5"]`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite", // ⚠️ "gemini-2.5-flash"는 단종된 모델 — 매 호출 404. cineboard의 검증된 텍스트 모델로 교체
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     config: { temperature: 0.9 },
   });
@@ -119,7 +119,7 @@ export async function generateImagePrompt(scene, options) {
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite", // ⚠️ "gemini-2.5-flash"는 단종된 모델 — 매 호출 404. cineboard의 검증된 텍스트 모델로 교체
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     config: { temperature: 0.7 },
   });
