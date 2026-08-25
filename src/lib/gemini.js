@@ -279,7 +279,8 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
     temperature: 1,
     topP: 0.95,
     maxOutputTokens: 32768,
-    imageConfig: { aspectRatio, outputMimeType: "image/png", imageSize: "1K" },
+    // ⚠️ outputMimeType은 이 API가 지원하지 않는 파라미터 — 매 시도 즉시 거부당했음 (cineboard에도 없는 필드)
+    imageConfig: { aspectRatio, imageSize: "1K" },
     safetySettings: [
       { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
       { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
