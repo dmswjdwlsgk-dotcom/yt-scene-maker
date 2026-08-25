@@ -17,11 +17,13 @@ export function initVertex(vertexKey) {
     return;
   }
   // Vertex AI Express - API key로 접근 (google/genai SDK의 Vertex AI Express 지원)
+  // ⚠️ vertexai:true를 빼먹으면 SDK가 여전히 "일반 Gemini API" 경로 규칙(/v1beta/models/{model})으로
+  //    요청을 만드는데, 그걸 Vertex 서버(aiplatform.googleapis.com)로 보내니 존재하지 않는 경로가 되어
+  //    매 호출이 속 빈 404로 실패했음. vertexai:true를 켜야 SDK가 Vertex 전용 경로
+  //    (publishers/google/models/{model})와 올바른 API 버전(v1beta1)을 자동으로 씀.
   vertexAi = new GoogleGenAI({
     apiKey: vertexKey,
-    httpOptions: {
-      baseUrl: "https://aiplatform.googleapis.com",
-    },
+    vertexai: true,
   });
   currentMode = "vertex";
 }
