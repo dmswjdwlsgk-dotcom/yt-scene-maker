@@ -139,6 +139,33 @@ export function getCurrentMode() {
   return currentMode;
 }
 
+// ─── 텍스트 생성 재시도 (429/503 대응) ────────────────────────────────────────
+// generateImagePrompt/suggestTitles는 재시도 로직이 아예 없어서, 씬이 많아
+// 동시 요청(기본 5개 동시)이 몰리면 429(RESOURCE_EXHAUSTED)가 뜨는 즉시 그
+// 씬만 실패했음 — 이미지 생성 쪽(generateImage)엔 이미 있는 재시도를 텍스트
+// 생성 쪽에도 동일하게 적용.
+async function withTextRetry(fn, maxAttempts = 6) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err?.message || err);
+      const is429 = msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED");
+      const is503 = msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("overloaded");
+      if (!is429 && !is503) throw err; // 재시도해도 소용없는 에러(인증 실패 등)는 즉시 던짐
+      if (attempt === maxAttempts) throw err;
+      // 구글 API 에러에 포함된 권장 대기시간(retryDelay)이 있으면 우선 사용
+      const retryDelayMatch = msg.match(/"retryDelay":"(\d+)s"/);
+      const waitSec = retryDelayMatch ? Number(retryDelayMatch[1]) + 1 : Math.min(attempt * 5 + Math.random() * 3, 30);
+      console.warn(`[텍스트 생성 재시도 ${attempt}/${maxAttempts}] ${waitSec.toFixed(1)}초 후 재시도...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1000));
+    }
+  }
+  throw lastErr;
+}
+
 // Scene splitting
 // 원본 열정PD 방식: AI 없이 코드로 정확히 분할 (초당 8자 기준)
 function programmaticSplitScript(script, charsPerScene = 160) {
@@ -194,11 +221,11 @@ export async function suggestTitles(topic, genre) {
 
 ["제목1", "제목2", "제목3", "제목4", "제목5"]`;
 
-  const response = await ai.models.generateContent({
+  const response = await withTextRetry(() => ai.models.generateContent({
     model: "gemini-3.1-flash-lite", // ⚠️ "gemini-2.5-flash"는 단종된 모델 — 매 호출 404. cineboard의 검증된 텍스트 모델로 교체
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     config: { temperature: 0.9 },
-  });
+  }));
 
   const text = response.text.trim();
   const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -221,11 +248,11 @@ export async function generateImagePrompt(scene, options) {
     subMode: options.subMode,
   });
 
-  const response = await ai.models.generateContent({
+  const response = await withTextRetry(() => ai.models.generateContent({
     model: "gemini-3.1-flash-lite", // ⚠️ "gemini-2.5-flash"는 단종된 모델 — 매 호출 404. cineboard의 검증된 텍스트 모델로 교체
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     config: { temperature: 0.7 },
-  });
+  }));
 
   return response.text.trim();
 }
