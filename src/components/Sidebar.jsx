@@ -24,6 +24,7 @@ const LANGUAGE_OPTIONS = [
 const IMAGE_MODELS = [
   { id: "Nano1 (gemini-2.5-flash-image)", name: "나노바나나1", desc: "가장 빠르고 저렴", emoji: "🍌" },
   { id: "Fast (Gemini-2.5-pro)", name: "나노바나나2", desc: "빠르고 안정적 (추천)", emoji: "🍌", badge: "추천" },
+  { id: "Nano2 Lite (gemini-3.1-flash-lite-image)", name: "나노바나나2 라이트", desc: "나노바나나2보다 더 빠르고 저렴", emoji: "🍌" },
   { id: "Premium (Gemini 3 Pro)", name: "나노바나나 프로", desc: "고화질 (시간 소요)", emoji: "🍌" },
   { id: "Ultra (Imagen 4 Ultra)", name: "Imagen 4 Ultra", desc: "최고 화질 (텍스트 전용)", emoji: "💎" },
 ];

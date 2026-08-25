@@ -642,6 +642,36 @@ async function encodeWithFFmpegWasm(frames, duration, fps, width, height, scene,
   return { mp4: data instanceof Uint8Array ? data : new Uint8Array(data), duration };
 }
 
+// ── FFmpeg WASM 씬 합치기 (로컬 서버 없이도 여러 씬 concat) ───────────────────
+async function concatWithFFmpegWasm(mp4List, onProgress) {
+  let FFmpeg;
+  try {
+    const mod = await import("@ffmpeg/ffmpeg");
+    FFmpeg = mod.FFmpeg;
+  } catch {
+    throw new Error("FFmpeg WASM를 불러올 수 없습니다. 로컬 서버(server/index.js)를 실행해주세요.");
+  }
+  const ffmpeg = new FFmpeg();
+  await ffmpeg.load({
+    coreURL: "/ffmpeg-core.js",
+    wasmURL: "/ffmpeg-core.wasm",
+  });
+
+  let listTxt = "";
+  for (let i = 0; i < mp4List.length; i++) {
+    const fname = `part${String(i).padStart(4, "0")}.mp4`;
+    await ffmpeg.writeFile(fname, mp4List[i]);
+    listTxt += `file '${fname}'\n`;
+  }
+  await ffmpeg.writeFile("concat_list.txt", listTxt);
+
+  onProgress?.({ phase: "concat", current: 0, total: 1 });
+  // 모든 씬이 동일한 인코딩 설정을 거쳐 나온 mp4라 재인코딩 없이 스트림 복사로 합칠 수 있음
+  await ffmpeg.exec(["-y", "-f", "concat", "-safe", "0", "-i", "concat_list.txt", "-c", "copy", "output.mp4"]);
+  const data = await ffmpeg.readFile("output.mp4");
+  return data instanceof Uint8Array ? data : new Uint8Array(data);
+}
+
 // ── BGM mixing ────────────────────────────────────────────────────────────────
 async function mixBgm(mp4Data, bgmDataUrl, volume, server, onProgress) {
   const mp4Base64 = uint8ToBase64(mp4Data);
@@ -744,7 +774,9 @@ export async function exportVideo({ scenes, settings, motion, effects, subtitle,
     if (!json.success) throw new Error(json.error || "concat 실패");
     finalMp4 = Uint8Array.from(atob(json.mp4Base64), c => c.charCodeAt(0));
   } else {
-    throw new Error("영상 합치기 실패: 로컬 서버를 실행해주세요.");
+    // 로컬 서버 없이도(=배포된 웹사이트에서 바로) 여러 씬을 합칠 수 있도록 WASM 폴백
+    onProgress?.({ phase: "concat" });
+    finalMp4 = await concatWithFFmpegWasm(sceneKeys.map(k => sceneMp4s.get(k)), onProgress);
   }
 
   // BGM mixing

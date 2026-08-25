@@ -251,6 +251,8 @@ export async function generateImage(imagePrompt, aspectRatio = "16:9", imageMode
     ? "gemini-3-pro-image"
     : imageModel.includes("Nano1")
     ? "gemini-2.5-flash-image"         // 나노바나나1
+    : imageModel.includes("Lite")
+    ? "gemini-3.1-flash-lite-image"    // 나노바나나2 라이트
     : "gemini-3.1-flash-image";        // 나노바나나2 (Fast, 기본값)
 
   // Imagen 4 Ultra: generateImages API 사용

@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# FFmpeg binaries
-public/ffmpeg-core.js
-public/ffmpeg-core.wasm
 
 # Editor directories and files
 .vscode/*
