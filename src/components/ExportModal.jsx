@@ -596,18 +596,38 @@ async function exportEditorProject(scenes, settings, title, editor, fps = 30) {
   }
 
   if (editor === "capcut") {
-    await installCapCutDirect(scenes, settings, title);
-    return;
-    // 미지원 브라우저 → ZIP 폴백
-    const zip = new JSZip();
-    const draftFolder = zip.folder("draft");
-    draftFolder.file("draft_content.json", buildCapCutDraft(scenes, title, W, H, dur, ""));
-    draftFolder.file("draft_meta_info.json", buildCapCutMeta(title, W, H));
-    for (let i = 0; i < scenes.length; i++) {
-      if (scenes[i].imageBase64) draftFolder.file(`scene_${String(i + 1).padStart(3, "0")}.png`, base64ToBytes(scenes[i].imageBase64));
+    // ⚠️ CapCut 드래프트 등록(draft_info.json / root_meta_info.json)에는 실제 컴퓨터의
+    //    절대 경로가 반드시 필요한데, 브라우저는 보안상 절대 경로를 알 수 없다
+    //    (File System Access API도 경로 문자열을 안 준다) — 그래서 로컬 서버
+    //    (server/index.js, Node fs로 실제 경로를 읽음) 없이는 원천적으로 "직접 설치"가
+    //    불가능하다. 예전엔 이 사실 없이 그냥 fetch가 실패하면 알 수 없는 에러만
+    //    떴음(서버 없이 배포 사이트만 쓰는 사용자는 항상 실패). 이제 실패 시 왜
+    //    안 되는지 명확히 알려주고, 최소한 이미지만이라도 ZIP으로 챙겨준다.
+    try {
+      await installCapCutDirect(scenes, settings, title);
+    } catch (err) {
+      const zip = new JSZip();
+      const folder = zip.folder("images");
+      for (let i = 0; i < scenes.length; i++) {
+        if (scenes[i].imageBase64) folder.file(`scene_${String(i + 1).padStart(3, "0")}.png`, base64ToBytes(scenes[i].imageBase64));
+      }
+      zip.file("subtitles.srt", buildSRT(scenes, dur));
+      zip.file(
+        "CapCut 직접 설치 안내.txt",
+        "CapCut 드래프트 폴더에 자동으로 설치하려면 로컬 서버가 필요합니다.\n\n" +
+        "1. 터미널에서 프로젝트 폴더로 이동\n" +
+        "2. npm run server 실행 (localhost:3099가 뜰 때까지 대기)\n" +
+        "3. 서버를 켠 채로 이 페이지에서 '캡컷' 버튼을 다시 눌러주세요.\n\n" +
+        "(CapCut 드래프트 등록 파일은 실제 컴퓨터의 절대 경로를 알아야 해서,\n" +
+        " 브라우저만으로는 자동 설치가 원천적으로 불가능합니다. 로컬 서버가 반드시 필요해요.)\n\n" +
+        "서버 없이 급하게 쓰려면: 이 ZIP 속 이미지를 CapCut에서 새 프로젝트를 만들고\n" +
+        "순서대로 직접 타임라인에 끌어다 놓아 수동으로 편집해주세요.\n\n" +
+        `(오류 내용: ${err.message})`
+      );
+      const blob = await zip.generateAsync({ type: "blob" });
+      downloadBlob(blob, `${title || "project"}_capcut_manual.zip`);
+      throw new Error("로컬 서버가 꺼져 있어 직접 설치를 할 수 없습니다. 터미널에서 npm run server 실행 후 다시 시도해주세요. (대신 이미지 ZIP은 다운로드했습니다)");
     }
-    const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, `${title || "project"}_capcut.zip`);
     return;
   }
 
